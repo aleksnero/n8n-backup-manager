@@ -10,7 +10,22 @@
 **Автоматична система резервного копіювання та відновлення для n8n**
 
 [Особливості](#-особливості) • [Встановлення](#-встановлення) • [Використання](#-використання) • [Оновлення](#-система-оновлень) • [Скріншоти](#-скріншоти)
+## 📸 Скріншоти
 
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### Backups
+![Backups](screenshots/backups.png)
+
+### Settings
+![Settings](screenshots/settings.png)
+
+### Updates
+![Updates](screenshots/updates.png)
+
+### Logs
+![Logs](screenshots/logs.png)
 </div>
 
 ---
@@ -31,23 +46,23 @@
 ## 📸 Скріншоти
 
 ### Dashboard
-![Dashboard](screenshots/dashboard.png)
+![Dashboard](screenshots/Dashboard.png)
 *Головна сторінка з статусом системи та швидкими діями*
 
 ### Backups
-![Backups](screenshots/backups.png)
+![Backups](screenshots/Backups.png)
 *Управління резервними копіями: перегляд, завантаження, відновлення*
 
 ### Settings
-![Settings](screenshots/settings.png)
+![Settings](screenshots/Settings.png)
 *Налаштування підключення та планування бекапів*
 
 ### Updates
-![Updates](screenshots/updates.png)
+![Updates](screenshots/Updates.png)
 *Система автоматичного оновлення з GitHub*
 
 ### Logs
-![Logs](screenshots/logs.png)
+![Logs](screenshots/Logs.png)
 *Детальні логи всіх операцій системи*
 
 ## 📋 Вимоги
