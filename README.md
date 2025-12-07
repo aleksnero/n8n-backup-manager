@@ -4,191 +4,189 @@
 
 ![n8n Backup Manager](screenshots/banner.png)
 
+[![From Ukraine with Love](https://img.shields.io/badge/From%20Ukraine-with%20Love!-%230057B8?style=for-the-badge&logo=ukraine&labelColor=%23FFD700)](https://stand-with-ukraine.pp.ua)
+
 ![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![Docker](https://img.shields.io/badge/docker-required-blue.svg)
 
-**Автоматична система резервного копіювання та відновлення для n8n**
+**Automatic backup and restore system for n8n**
 
-[Особливості](#-особливості) • [Встановлення](#-встановлення) • [Використання](#-використання) • [Оновлення](#-система-оновлень) • [Скріншоти](#-скріншоти)
+[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Updates](#-updates) • [Screenshots](#-screenshots) • [🇺🇦 Українська версія](README.uk.md)
 
 </div>
 
 ---
 
-## 🚀 Особливості
+## 🚀 Features
 
-- ✅ **Автоматичне резервне копіювання** n8n та бази даних
-- ✅ **Підтримка PostgreSQL та SQLite**
-- ✅ **Гнучке планування** бекапів (cron або інтервали)
-- ✅ **Завантаження та відновлення** бекапів одним кліком
-- ✅ **Захист важливих бекапів** від автоматичного видалення
-- ✅ **Веб-інтерфейс** для управління
-- ✅ **Система автоматичного оновлення** з GitHub
-- ✅ **Rollback** до попередніх версій
-- ✅ **Моніторинг статусу** підключення
-- ✅ **Детальне логування** всіх операцій
+- ✅ **Automatic Backup** of n8n workflows and database
+- ✅ **PostgreSQL & SQLite Support**
+- ✅ **Flexible Scheduling** (cron or intervals)
+- ✅ **One-Click Backup & Restore**
+- ✅ **Protected Backups** (prevent auto-deletion)
+- ✅ **Web Interface** for management
+- ✅ **Automatic Update System** from GitHub
+- ✅ **Rollback** capability
+- ✅ **Connection Status Monitoring**
+- ✅ **Detailed Logging**
 
-## 📸 Скріншоти
+## 📸 Screenshots
 
 ### Dashboard
 ![Dashboard](screenshots/Dashboard.png)
-*Головна сторінка з статусом системи та швидкими діями*
+*Main dashboard with system status and quick actions*
 
 ### Backups
 ![Backups](screenshots/Backups.png)
-*Управління резервними копіями: перегляд, завантаження, відновлення*
+*Backup management: view, download, restore*
 
 ### Settings
 ![Settings](screenshots/Settings.png)
-*Налаштування підключення та планування бекапів*
+*Connection settings and backup scheduling*
 
 ### Updates
 ![Updates](screenshots/Updates.png)
-*Система автоматичного оновлення з GitHub*
+*Automatic update system from GitHub*
 
 ### Logs
 ![Logs](screenshots/Logs.png)
-*Детальні логи всіх операцій системи*
+*Detailed system logs*
 
-## 📋 Вимоги
+## 📋 Requirements
 
-- Docker та Docker Compose
-- n8n запущений у Docker контейнері
-- PostgreSQL або SQLite база даних
-- Мінімум 1GB вільного місця для бекапів
+- Docker & Docker Compose
+- n8n running in a Docker container
+- PostgreSQL or SQLite database
+- Minimum 1GB free space for backups
 
-## 🛠️ Встановлення
+## 🛠️ Installation
 
-### Швидкий старт
+### Quick Start
 
-1. **Завантажте останній реліз:**
+1. **Download the latest release:**
    ```bash
    wget https://github.com/aleksnero/n8n-backup-manager/releases/latest/download/release.zip
    unzip release.zip
    cd n8n-backup-manager
    ```
 
-2. **Запустіть через Docker Compose:**
+2. **Start with Docker Compose:**
    ```bash
    docker-compose up -d
    ```
 
-3. **Відкрийте браузер:**
+3. **Open in Browser:**
    ```
    http://localhost:3000
    ```
 
-4. **Перше налаштування:**
-   - Натисніть "First Time Setup"
-   - Створіть адміністратора (логін та пароль)
-   - Увійдіть у систему
+4. **First Time Setup:**
+   - Click "First Time Setup"
+   - Create an admin account (username & password)
+   - Log in
 
-### Детальне встановлення
+### Advanced Installation
 
-#### 1. Клонування репозиторію (альтернатива)
+#### 1. Clone Repository (Alternative)
 
 ```bash
 git clone https://github.com/aleksnero/n8n-backup-manager.git
 cd n8n-backup-manager
 ```
 
-#### 2. Налаштування змінних середовища
+#### 2. Environment Variables
 
-Створіть файл `.env`:
+Create a `.env` file:
 
 ```env
 JWT_SECRET=your_secret_key_here
 UPDATE_SERVER_URL=https://raw.githubusercontent.com/aleksnero/n8n-backup-manager/main/version.json
 ```
 
-#### 3. Запуск
+#### 3. Run
 
 ```bash
 docker-compose up -d --build
 ```
 
-## 📖 Використання
+## 📖 Usage
 
-### Налаштування підключення
+### Connection Settings
 
-Перейдіть у розділ **Settings** та вкажіть:
+Go to **Settings** and configure:
 
-**Для Docker:**
-- **Database Container Name**: назва контейнера з БД (наприклад, `postgres-1`)
-- **Database Type**: PostgreSQL або SQLite
+**For Docker:**
+- **Database Container Name**: DB container name (e.g., `postgres-1`)
+- **Database Type**: PostgreSQL or SQLite
 
-**Для PostgreSQL:**
-- **Database User**: ім'я користувача
-- **Database Password**: пароль
-- **Database Name**: назва бази даних
+**For PostgreSQL:**
+- **Database User**: username
+- **Database Password**: password
+- **Database Name**: database name
 
-**Для SQLite:**
-- **Database Path**: шлях до файлу БД (наприклад, `/home/node/.n8n/database.sqlite`)
+**For SQLite:**
+- **Database Path**: path to DB file (e.g., `/home/node/.n8n/database.sqlite`)
 
-**Планування:**
-- **Backup Schedule**: виберіть інтервал (1, 6, 12, 24 години) або cron вираз
-- **Protected Backups Count**: кількість бекапів для захисту від видалення
+**Scheduling:**
+- **Backup Schedule**: select interval (1, 6, 12, 24 hours) or cron expression
+- **Protected Backups Count**: number of backups to keep from deletion
 
-### Створення бекапу
+### Creating Backups
 
-**Автоматично:**
-- Бекапи створюються згідно з розкладом
+**Automatic:**
+- Backups are created according to the schedule.
 
-**Вручну:**
-1. Перейдіть у розділ **Dashboard** або **Backups**
-2. Натисніть **Create Backup**
-3. Дочекайтеся завершення
+**Manual:**
+1. Go to **Dashboard** or **Backups**.
+2. Click **Create Backup**.
+3. Wait for completion.
 
-### Відновлення з бекапу
+### Restoring
 
-1. Перейдіть у розділ **Backups**
-2. Знайдіть потрібний бекап
-3. Натисніть **Restore**
-4. Підтвердіть дію
-5. Дочекайтеся завершення відновлення
+1. Go to **Backups**.
+2. Find the desired backup.
+3. Click **Restore**.
+4. Confirm action.
+5. Wait for restoration to complete.
 
-### Завантаження бекапу
+### Downloading
 
-1. У розділі **Backups** натисніть **Download** біля потрібного бекапу
-2. Файл завантажиться на ваш комп'ютер
+1. In **Backups**, click **Download** next to the file.
+2. The file will be saved to your computer.
 
-## 🔄 Система оновлень
+## 🔄 Update System
 
-Backup Manager підтримує автоматичне оновлення з GitHub:
+Backup Manager supports automatic updates from GitHub:
 
-### Перевірка оновлень
+### Checking for Updates
 
-1. Перейдіть у розділ **Updates**
-2. Натисніть **Check for Updates**
-3. Якщо доступна нова версія, ви побачите:
-   - Номер нової версії
-   - Дату релізу
-   - Release notes
-   - Список змін
+1. Go to **Updates**.
+2. Click **Check for Updates**.
+3. If new version is available, you will see release notes.
 
-### Застосування оновлення
+### Applying Updates
 
-1. Натисніть **Apply Update**
-2. Підтвердіть дію
-3. Система автоматично:
-   - Створить резервну копію поточної версії
-   - Завантажить нове оновлення
-   - Застосує зміни
-   - Перезапустить сервер
+1. Click **Apply Update**.
+2. Confirm.
+3. System will:
+   - Create a backup of current version
+   - Download update
+   - Apply changes
+   - Restart server
 
 ### Rollback
 
-Якщо після оновлення виникли проблеми:
+If issues occur after update:
 
-1. Перейдіть у розділ **Updates**
-2. Натисніть **Rollback**
-3. Система відновить попередню версію
+1. Go to **Updates**.
+2. Click **Rollback**.
+3. System restores previous version.
 
 ## 🐳 Docker Compose
 
-Приклад `docker-compose.yml`:
+Example `docker-compose.yml`:
 
 ```yaml
 version: '3.8'
@@ -214,69 +212,78 @@ networks:
     external: true
 ```
 
-## 🔧 Налаштування
+## 🔧 Configuration
 
-### Змінні середовища
+### Environment Variables
 
-| Змінна | Опис | За замовчуванням |
-|--------|------|------------------|
-| `JWT_SECRET` | Секретний ключ для JWT токенів | `secret-key` |
-| `UPDATE_SERVER_URL` | URL для перевірки оновлень | GitHub URL |
-| `PORT` | Порт сервера | `3000` |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `JWT_SECRET` | Secret key for JWT | `secret-key` |
+| `UPDATE_SERVER_URL` | URL for update checks | GitHub URL |
+| `PORT` | Server port | `3000` |
 
 ### Volumes
 
-| Volume | Опис |
-|--------|------|
-| `/var/run/docker.sock` | Доступ до Docker для управління контейнерами |
-| `./backups` | Зберігання резервних копій |
-| `./data` | База даних SQLite |
+| Volume | Description |
+|--------|-------------|
+| `/var/run/docker.sock` | Docker access for container management |
+| `./backups` | Backup storage |
+| `./data` | SQLite database |
 
-## 📊 Технології
+## 📊 Tech Stack
 
 - **Backend**: Node.js, Express
 - **Frontend**: React, Vite
 - **Database**: SQLite (Sequelize ORM)
-- **Docker**: Dockerode для управління контейнерами
-- **Scheduler**: node-cron для планування
+- **Docker**: Dockerode
+- **Scheduler**: node-cron
 - **Authentication**: JWT
 
-## 🤝 Внесок
+## 🤝 Contribution
 
-Вітаються pull requests! Для великих змін спочатку відкрийте issue для обговорення.
+Pull requests are welcome! For major changes, please open an issue first.
 
-1. Fork репозиторій
-2. Створіть гілку (`git checkout -b feature/amazing-feature`)
-3. Commit зміни (`git commit -m 'Add amazing feature'`)
-4. Push в гілку (`git push origin feature/amazing-feature`)
-5. Відкрийте Pull Request
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📝 Ліцензія
+## 📝 License
 
-MIT License - дивіться файл [LICENSE](LICENSE) для деталей
+MIT License - see [LICENSE](LICENSE) for details
 
-## 🆘 Підтримка
+## 💬 Discussions
 
-Якщо у вас виникли проблеми:
+Have questions or ideas? Join [GitHub Discussions](https://github.com/aleksnero/n8n-backup-manager/discussions)!
 
-1. Перевірте [Issues](https://github.com/aleksnero/n8n-backup-manager/issues)
-2. Створіть новий Issue з детальним описом проблеми
-3. Додайте логи з `docker-compose logs`
+- 💡 **Ideas** - suggest new features
+- ❓ **Q&A** - get help from community
+- 📢 **Announcements** - stay updated
+- 🎉 **Show and tell** - share how you use Backup Manager
 
-## 🔗 Посилання
+## 🆘 Support
+
+If you encounter issues:
+
+1. Check [Issues](https://github.com/aleksnero/n8n-backup-manager/issues)
+2. Create a new Issue with detailed description
+3. Attach logs from `docker-compose logs`
+
+## 🔗 Links
 
 - **GitHub**: https://github.com/aleksnero/n8n-backup-manager
 - **Releases**: https://github.com/aleksnero/n8n-backup-manager/releases
 - **Issues**: https://github.com/aleksnero/n8n-backup-manager/issues
 
-## 🙏 Подяки
+## 🙏 Acknowledgements
 
-Створено для спільноти n8n з ❤️
+Made for the n8n community with ❤️
 
 ---
 
 <div align="center">
 
-**[⬆ Повернутися до початку](#n8n-backup-manager)**
+**[⬆ Back to Top](#n8n-backup-manager)**
 
 </div>
