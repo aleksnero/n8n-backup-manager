@@ -1,0 +1,42 @@
+node_modules/
+dist/
+build/
+
+# Backups and data
+backups/
+data/
+*.sqlite
+*.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Environment variables
+.env
+.env.local
+
+# Deployment archives
+deploy.zip
+deploy_*.zip
+temp_update.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

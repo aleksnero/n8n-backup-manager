@@ -1,0 +1,87 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install server dependencies
+        run: |
+          cd server
+          npm install
+
+      - name: Install client dependencies
+        run: |
+          cd client
+          npm install
+
+      - name: Build client
+        run: |
+          cd client
+          npm run build
+
+      - name: Copy client build to server
+        run: |
+          rm -rf server/public
+          cp -r client/dist server/public
+
+      - name: Create release archive
+        run: |
+          mkdir -p release
+          cp -r server release/
+          cp -r backups release/ || true
+          cp docker-compose.yml release/
+          cp Dockerfile release/
+          cp README.md release/
+          cp CHANGELOG.md release/
+          cd release
+          zip -r ../release.zip .
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Update version.json
+        run: |
+          cat > version.json << EOF
+          {
+            "version": "${{ steps.get_version.outputs.VERSION }}",
+            "releaseDate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "releaseNotes": "Release ${{ steps.get_version.outputs.VERSION }}",
+            "downloadUrl": "https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.VERSION }}/release.zip",
+            "minVersion": "1.0.0",
+            "changelog": []
+          }
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release.zip
+            version.json
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit version.json to main branch
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git checkout main
+          git add version.json
+          git commit -m "Update version.json for v${{ steps.get_version.outputs.VERSION }}" || echo "No changes to commit"
+          git push origin main || echo "Nothing to push"
