@@ -1,13 +1,13 @@
 {
-    "version": "1.2.0",
-    "releaseDate": "2025-12-09",
-    "releaseNotes": "Виправлення безпеки (SQLite WAL), мобільна версія (Responsive), Хмарні бекапи (S3)",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.2.0/release.zip",
+    "version": "1.2.1",
+    "releaseDate": "2025-12-09T20:00:00Z",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.2.1/release.zip",
+    "releaseNotes": "Multi-language support (EN/UA), Password Change, and Delete History features.",
     "minVersion": "1.0.0",
     "changelog": [
-        "Безпека: Увімкнено режим WAL для SQLite",
-        "Інтерфейс: Адаптивна мобільна версія з боковим меню",
-        "Функціонал: Підтримка хмарних бекапів (S3)",
-        "Оновлено залежності"
+        "Localization: Added English/Ukrainian language switcher",
+        "Security: Added Change Password feature",
+        "Feature: Added ability to delete update history items",
+        "Fix: Improved version display and frontend build process"
     ]
 }
