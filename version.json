@@ -1,14 +1,13 @@
 {
-    "version": "1.1.0",
-    "releaseDate": "2025-12-07",
-    "releaseNotes": "Додано систему автоматичного оновлення, GitHub Actions, покращено документацію",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.1.0/release.zip",
+    "version": "1.2.0",
+    "releaseDate": "2025-12-09",
+    "releaseNotes": "Виправлення безпеки (SQLite WAL), мобільна версія (Responsive), Хмарні бекапи (S3)",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.2.0/release.zip",
     "minVersion": "1.0.0",
     "changelog": [
-        "Система автоматичного оновлення",
-        "Перевірка оновлень з GitHub",
-        "Rollback функціонал",
-        "UI для управління оновленнями",
-        "GitHub Actions для релізів"
+        "Безпека: Увімкнено режим WAL для SQLite",
+        "Інтерфейс: Адаптивна мобільна версія з боковим меню",
+        "Функціонал: Підтримка хмарних бекапів (S3)",
+        "Оновлено залежності"
     ]
 }
