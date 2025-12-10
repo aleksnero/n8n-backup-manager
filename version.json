@@ -1,13 +1,14 @@
 {
-    "version": "1.2.1",
-    "releaseDate": "2025-12-09T20:00:00Z",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.2.1/release.zip",
-    "releaseNotes": "Multi-language support (EN/UA), Password Change, and Delete History features.",
+    "version": "1.2.2",
+    "releaseDate": "2025-12-10T20:00:00Z",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.2.2/release.zip",
+    "releaseNotes": "UI Improvements, Password Visibility, and Enhanced Updates Page.",
     "minVersion": "1.0.0",
     "changelog": [
-        "Localization: Added English/Ukrainian language switcher",
-        "Security: Added Change Password feature",
-        "Feature: Added ability to delete update history items",
-        "Fix: Improved version display and frontend build process"
+        "UI: Moved clock to dashboard header",
+        "UI: Added password visibility toggle",
+        "UI: Added version number to sidebar",
+        "Feature: Enhanced Updates page with history and delete option",
+        "Fix: Cleaned up Settings page"
     ]
 }
