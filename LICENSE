@@ -1,21 +1,16 @@
-MIT License
 
-Copyright (c) 2025 aleksnero
+N8N BACKUP MANAGER LICENSE AGREEMENT
+Copyright (c) 2025 aleksnero (https://github.com/aleksnero/n8n-backup-manager)
+This Software is provided to you for free, subject to the following conditions:
+1. PERSONAL AND COMMERCIAL USE
+The Software may be used for free for personal, educational, and commercial purposes within your own organization.
+2. ATTRIBUTION (REQUIRED)
+Any public mention, distribution, or showcase of this Software (including but not limited to articles, videos, social media posts, or redistribution of the code/binaries) must include a clear and visible link to the original author's repository:
+https://github.com/aleksnero/n8n-backup-manager
+3. RESTRICTIONS
+- NO RESALE: You are strictly prohibited from selling, renting, or leasing this Software, either as a standalone product or as part of a bundle, without the express written permission of the author.
+- NO REBRANDING: You may not republish or redistribute this Software under your own name, brand, or as your own work. All original copyright notices, logos, and attribution links must remain intact.
+- NO UNAUTHORIZED HOSTING FOR PROFIT: You may not provide this Software as a paid service (SaaS) without prior agreement with the author.
+4. DISCLAIMER
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
