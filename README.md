@@ -40,7 +40,7 @@
 ## 📸 Screenshots
 
 ### Dashboard
-![Dashboard](screenshots/Dashboard (2).png)
+![Dashboard](screenshots/Dashboard(2).png)
 *Main dashboard with system status and quick actions*
 
 ### Backups
@@ -303,6 +303,7 @@ Made for the n8n community with ❤️
 **[⬆ Back to Top](#n8n-backup-manager)**
 
 </div>
+
 
 
 
