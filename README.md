@@ -40,23 +40,23 @@
 ## 📸 Screenshots
 
 ### Dashboard
-![Dashboard](screenshots/Dashboard.png)
+![Dashboard](screenshots/Dashboard (2).png)
 *Main dashboard with system status and quick actions*
 
 ### Backups
-![Backups](screenshots/Backups.png)
+![Backups](screenshots/Backups (2).png)
 *Backup management: view, download, restore*
 
 ### Settings
-![Settings](screenshots/Settings.png)
+![Settings](screenshots/Settings (2).png)
 *Connection settings and backup scheduling*
 
 ### Updates
-![Updates](screenshots/Updates.png)
+![Updates](screenshots/Updates (2).png)
 *Automatic update system from GitHub*
 
 ### Logs
-![Logs](screenshots/Logs.png)
+![Logs](screenshots/Logs (2).png)
 *Detailed system logs*
 
 ## 📋 Requirements
@@ -303,3 +303,4 @@ Made for the n8n community with ❤️
 **[⬆ Back to Top](#n8n-backup-manager)**
 
 </div>
+
