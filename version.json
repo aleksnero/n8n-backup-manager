@@ -1,14 +1,15 @@
 {
-    "version": "1.2.2",
-    "releaseDate": "2025-12-10T20:00:00Z",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.2.2/release.zip",
-    "releaseNotes": "UI Improvements, Password Visibility, and Enhanced Updates Page.",
-    "minVersion": "1.0.0",
+    "version": "1.3.0",
+    "releaseDate": "2026-01-03T12:00:00Z",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.3.0/deploy.zip",
+    "releaseNotes": "Feature update: Storage location tracking, Cloud status indicators, OneDrive support, and Restore timeout fix.",
+    "minVersion": "1.2.0",
     "changelog": [
-        "UI: Moved clock to dashboard header",
-        "UI: Added password visibility toggle",
-        "UI: Added version number to sidebar",
-        "Feature: Enhanced Updates page with history and delete option",
-        "Fix: Cleaned up Settings page"
+        "Feature: Storage Location Tracking (Local, Google Drive, OneDrive, S3)",
+        "Feature: Cloud Connection Status on Dashboard",
+        "Feature: OneDrive OAuth2 Support with Auth Code Exchange",
+        "Fix: Increased server timeout to 10 minutes (fixes 502 errors during restore)",
+        "UI: Storage column in Backups table with icons",
+        "UI: Cloud provider status indicators on Dashboard"
     ]
 }
