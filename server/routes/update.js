@@ -73,4 +73,19 @@ router.get('/history', async (req, res) => {
     }
 });
 
+/**
+ * DELETE /api/updates/history/:filename
+ * Delete update history item
+ */
+router.delete('/history/:filename', async (req, res) => {
+    try {
+        const { filename } = req.params;
+        const result = await updateService.deleteUpdateHistoryItem(filename);
+        res.json(result);
+    } catch (error) {
+        console.error('Delete history item error:', error);
+        res.status(500).json({ message: 'Failed to delete history item', error: error.message });
+    }
+});
+
 module.exports = router;

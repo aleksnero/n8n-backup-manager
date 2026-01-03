@@ -1,4 +1,5 @@
 const Docker = require('dockerode');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const fs = require('fs');
 const path = require('path');
 const Backup = require('../models/Backup');
@@ -22,8 +23,42 @@ const getSetting = async (key) => {
     return s ? s.value : null;
 };
 
+const rotateBackups = async (retentionCount) => {
+    if (!retentionCount || retentionCount <= 0) return;
+
+    try {
+        const backups = await Backup.findAll({
+            order: [['createdAt', 'DESC']]
+        });
+
+        // Filter out protected backups
+        const unprotectedBackups = backups.filter(b => !b.isProtected);
+
+        // If we have more unprotected backups than the limit
+        if (unprotectedBackups.length > retentionCount) {
+            const toDelete = unprotectedBackups.slice(retentionCount);
+
+            await logMessage('info', `Rotating backups: Deleting ${toDelete.length} old backups (Limit: ${retentionCount})`);
+
+            for (const backup of toDelete) {
+                try {
+                    if (fs.existsSync(backup.path)) {
+                        fs.unlinkSync(backup.path);
+                    }
+                    await backup.destroy();
+                    await logMessage('info', `Deleted old backup: ${backup.filename}`);
+                } catch (err) {
+                    await logMessage('error', `Failed to delete old backup ${backup.filename}: ${err.message}`);
+                }
+            }
+        }
+    } catch (error) {
+        await logMessage('error', `Backup rotation failed: ${error.message}`);
+    }
+};
+
 const createBackup = async (type = 'manual') => {
-    const VERSION = '1.1.0';
+    const VERSION = '1.2.2';
     await logMessage('info', `Starting ${type} backup... (v${VERSION})`);
 
     // Ensure backup directory exists
@@ -124,6 +159,15 @@ const createBackup = async (type = 'manual') => {
             size: stats.size,
             type
         });
+
+        // Attempt S3 Upload
+        await uploadToS3(filepath, filename);
+
+        // Auto-Rotation logic
+        const retentionCount = parseInt(await getSetting('backup_retention_count') || '0');
+        if (retentionCount > 0) {
+            await rotateBackups(retentionCount);
+        }
 
         return backup;
     } catch (error) {
@@ -295,6 +339,50 @@ const toggleBackupProtection = async (id, isProtected) => {
 
     await logMessage('info', `Backup ${backup.filename} protection ${isProtected ? 'enabled' : 'disabled'}`);
     return backup;
+};
+
+const uploadToS3 = async (filepath, filename) => {
+    try {
+        const enabled = await getSetting('aws_s3_enabled');
+        if (enabled !== 'true') return;
+
+        await logMessage('info', 'Uploading backup to S3...');
+
+        const accessKeyId = await getSetting('aws_s3_access_key');
+        const secretAccessKey = await getSetting('aws_s3_secret_key');
+        const region = await getSetting('aws_s3_region');
+        const bucket = await getSetting('aws_s3_bucket');
+        const endpoint = await getSetting('aws_s3_endpoint');
+
+        if (!accessKeyId || !secretAccessKey || !bucket || !region) {
+            await logMessage('warn', 'S3 enabled but missing configuration. Skipping upload.');
+            return;
+        }
+
+        const config = {
+            region,
+            credentials: { accessKeyId, secretAccessKey }
+        };
+
+        if (endpoint) {
+            config.endpoint = endpoint;
+            config.forcePathStyle = true; // Often needed for custom endpoints like MinIO
+        }
+
+        const s3Client = new S3Client(config);
+        const fileStream = fs.createReadStream(filepath);
+
+        await s3Client.send(new PutObjectCommand({
+            Bucket: bucket,
+            Key: filename,
+            Body: fileStream
+        }));
+
+        await logMessage('info', `Successfully uploaded ${filename} to S3 bucket ${bucket}`);
+
+    } catch (error) {
+        await logMessage('error', `Failed to upload to S3: ${error.message}`);
+    }
 };
 
 module.exports = {

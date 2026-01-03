@@ -6,7 +6,7 @@
 
 [![From Ukraine with Love](https://img.shields.io/badge/From%20Ukraine-with%20Love!-%230057B8?style=for-the-badge&logo=ukraine&labelColor=%23FFD700)](https://stand-with-ukraine.pp.ua)
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![Docker](https://img.shields.io/badge/docker-required-blue.svg)
@@ -24,6 +24,8 @@
 - ✅ **Automatic Backup** of n8n workflows and database
 - ✅ **PostgreSQL & SQLite Support**
 - ✅ **Flexible Scheduling** (cron or intervals)
+- ✅ **Backup Retention Policy** (auto-delete old backups)
+- ✅ **Cloud Backups** (S3 Support included)
 - ✅ **One-Click Backup & Restore**
 - ✅ **Protected Backups** (prevent auto-deletion)
 - ✅ **Web Interface** for management

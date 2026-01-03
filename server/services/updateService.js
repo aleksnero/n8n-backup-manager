@@ -226,9 +226,30 @@ class UpdateService {
 
             return backups;
 
+            return backups;
+
         } catch (error) {
             console.error('Failed to get update history:', error);
             return [];
+        }
+    }
+
+    /**
+     * Delete update history item
+     */
+    async deleteUpdateHistoryItem(filename) {
+        try {
+            const filePath = path.join(__dirname, '..', 'backups', 'pre_update_backups', filename);
+
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                return { success: true, message: 'File deleted successfully' };
+            } else {
+                throw new Error('File not found');
+            }
+        } catch (error) {
+            console.error('Failed to delete history item:', error);
+            throw error;
         }
     }
 }

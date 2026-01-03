@@ -1,35 +1,14 @@
 # Changelog
 
-Всі важливі зміни в проекті будуть задокументовані в цьому файлі.
+## [1.2.1] - 2025-12-09
+### Added
+- Multi-language support (English/Ukrainian) with UI switcher.
+- Change Password functionality in Settings.
+- Ability to delete items from Update History.
+- "Delete" button for individual history files.
 
-Формат базується на [Keep a Changelog](https://keepachangelog.com/uk/1.0.0/),
-та проект дотримується [Semantic Versioning](https://semver.org/lang/uk/).
-
-## [1.1.0] - 2025-12-07
-
-### Додано
-- Система автоматичного оновлення
-- Перевірка оновлень з GitHub
-- Застосування оновлень одним кліком
-- Rollback до попередньої версії
-- UI для управління оновленнями
-- GitHub Actions для автоматичних релізів
-- Документація (README.md)
-- .gitignore файл
-
-### Змінено
-- Покращено updateService.js з підтримкою semver
-- Оновлено структуру проекту
-
-## [1.0.0] - 2025-12-01
-
-### Додано
-- Початковий реліз
-- Автоматичне резервне копіювання n8n
-- Підтримка PostgreSQL та SQLite
-- Веб-інтерфейс для управління
-- Планування бекапів (cron та інтервали)
-- Захист бекапів від видалення
-- Система логування
-- Моніторинг статусу підключення
-- Docker підтримка
+## [1.2.0] - 2025-12-06
+### Added
+- S3 Cloud Backup support.
+- Mobile responsive UI.
+- SQLite WAL mode for better database stability.

@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../context/LanguageContext';
 import axios from 'axios';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
+    const { t } = useTranslation();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [isSetup, setIsSetup] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -34,18 +38,18 @@ export default function Login() {
         if (isSetup) {
             try {
                 await axios.post('/api/auth/setup', { username, password });
-                alert('Setup complete! Please login.');
+                alert(t('setup_success'));
                 setIsSetup(false);
                 setSetupAllowed(false); // Setup no longer allowed
             } catch (error) {
-                setError(error.response?.data?.message || 'Setup failed');
+                setError(error.response?.data?.message || t('setup_failed'));
             }
         } else {
             const success = await login(username, password);
             if (success) {
                 navigate('/');
             } else {
-                setError('Invalid credentials');
+                setError(t('login_failed'));
             }
         }
     };
@@ -53,10 +57,10 @@ export default function Login() {
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
             <div className="card" style={{ width: '400px' }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>{isSetup ? 'Initial Setup' : 'n8n Backup Manager'}</h2>
+                <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>{isSetup ? t('setup_title') : t('login_title')}</h2>
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: '1rem' }}>
-                        <label>Username</label>
+                        <label>{t('username')}</label>
                         <input
                             type="text"
                             value={username}
@@ -65,17 +69,39 @@ export default function Login() {
                         />
                     </div>
                     <div style={{ marginBottom: '2rem' }}>
-                        <label>Password</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
+                        <label>{t('password')}</label>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                style={{ paddingRight: '40px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: 'var(--text-secondary)',
+                                    padding: 0,
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                }}
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
                     </div>
                     {error && <div style={{ color: 'var(--error)', marginBottom: '1rem' }}>{error}</div>}
                     <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-                        {isSetup ? 'Create Admin' : 'Login'}
+                        {isSetup ? t('create_admin') : t('login_btn')}
                     </button>
                     {setupAllowed && (
                         <button

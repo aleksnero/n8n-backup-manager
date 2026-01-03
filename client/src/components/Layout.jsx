@@ -1,63 +1,95 @@
+import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Database, Settings, FileText, LogOut, RefreshCw } from 'lucide-react';
+import { useTranslation } from '../context/LanguageContext';
+import { LayoutDashboard, Database, Settings, FileText, LogOut, RefreshCw, Menu, X, Globe } from 'lucide-react';
 
 export default function Layout() {
     const { user, logout } = useAuth();
+    const { t, language, toggleLanguage } = useTranslation();
     const location = useLocation();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [version, setVersion] = useState('');
+
+    useState(() => {
+        // Fetch version
+        import('axios').then(axios => {
+            axios.get('/api/settings').then(res => {
+                if (res.data.version) setVersion(res.data.version);
+            }).catch(() => setVersion('1.2.1'));
+        });
+    }, []);
 
     const navItems = [
-        { path: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-        { path: '/backups', icon: <Database size={20} />, label: 'Backups' },
-        { path: '/settings', icon: <Settings size={20} />, label: 'Settings' },
-        { path: '/logs', icon: <FileText size={20} />, label: 'Logs' },
-        { path: '/updates', icon: <RefreshCw size={20} />, label: 'Updates' },
+        { path: '/', icon: <LayoutDashboard size={20} />, label: t('dashboard') },
+        { path: '/backups', icon: <Database size={20} />, label: t('database') },
+        { path: '/settings', icon: <Settings size={20} />, label: t('settings') },
+        { path: '/logs', icon: <FileText size={20} />, label: t('logs') },
+        { path: '/updates', icon: <RefreshCw size={20} />, label: t('updates') },
     ];
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh' }}>
-            <aside style={{ width: '250px', backgroundColor: 'var(--bg-secondary)', borderRight: '1px solid var(--border)', padding: '1.5rem' }}>
-                <h2 style={{ marginBottom: '2rem', color: 'var(--accent)' }}>Backup Manager</h2>
-                <nav>
+        <div className="layout-container">
+            <button
+                className="mobile-menu-toggle btn btn-secondary"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle menu"
+            >
+                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+
+
+            <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
+                <h2 className="sidebar-title">Backup Manager</h2>
+                <nav className="sidebar-nav">
                     {navItems.map((item) => (
                         <Link
                             key={item.path}
                             to={item.path}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.75rem',
-                                padding: '0.75rem',
-                                color: location.pathname === item.path ? 'var(--accent)' : 'var(--text-secondary)',
-                                textDecoration: 'none',
-                                backgroundColor: location.pathname === item.path ? 'rgba(234, 75, 113, 0.1)' : 'transparent',
-                                borderRadius: 'var(--radius)',
-                                marginBottom: '0.5rem'
-                            }}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
                         >
                             {item.icon}
                             {item.label}
                         </Link>
                     ))}
                 </nav>
-                <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', color: 'var(--text-secondary)' }}>
-                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="sidebar-footer">
+                    <div className="user-info">
+                        <div className="user-avatar">
                             {user?.username[0].toUpperCase()}
                         </div>
-                        <span>{user?.username}</span>
+                        <span className="user-name">{user?.username}</span>
                     </div>
+
+                    <button
+                        onClick={toggleLanguage}
+                        className="btn btn-secondary"
+                        style={{ width: '100%', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                    >
+                        <Globe size={16} />
+                        <span>{language === 'en' ? 'Українська' : 'English'}</span>
+                    </button>
+
                     <button
                         onClick={logout}
-                        className="btn"
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', marginTop: '1rem', color: 'var(--error)', backgroundColor: 'transparent' }}
+                        className="btn logout-btn"
                     >
                         <LogOut size={20} />
-                        Logout
+                        {t('logout')}
                     </button>
+                    <div style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                        v{version}
+                    </div>
                 </div>
             </aside>
-            <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+
+            {isMobileMenuOpen && (
+                <div className="sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)} />
+            )}
+
+            <main className="main-content">
                 <Outlet />
             </main>
         </div>

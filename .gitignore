@@ -21,6 +21,7 @@ npm-debug.log*
 deploy.zip
 deploy_*.zip
 temp_update.zip
+release.zip
 
 # OS files
 .DS_Store

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Play, Clock, Database, AlertCircle } from 'lucide-react';
+import { useTranslation } from '../context/LanguageContext';
 
 export default function Dashboard() {
+    const { t } = useTranslation();
     const [backups, setBackups] = useState([]);
     const [settings, setSettings] = useState({});
     const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export default function Dashboard() {
 
     const updateCountdown = (schedule) => {
         if (!schedule || schedule === 'Not scheduled') {
-            setCountdown('Not scheduled');
+            setCountdown(t('not_scheduled'));
             return;
         }
 
@@ -84,7 +86,7 @@ export default function Dashboard() {
         const diff = nextTime - now;
 
         if (diff <= 0) {
-            setCountdown('Due now');
+            setCountdown(t('due_now'));
         } else {
             const hours = Math.floor(diff / 3600000);
             const mins = Math.floor((diff % 3600000) / 60000);
@@ -108,7 +110,7 @@ export default function Dashboard() {
         try {
             await axios.post('/api/backups');
             fetchData();
-            alert('Backup started successfully!');
+            alert(t('backup_started'));
         } catch (error) {
             alert('Backup failed: ' + error.response?.data?.message);
         }
@@ -127,7 +129,7 @@ export default function Dashboard() {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             fetchData();
-            alert('Backup uploaded successfully!');
+            alert(t('backup_uploaded'));
         } catch (error) {
             alert('Upload failed: ' + error.response?.data?.message);
         } finally {
@@ -142,19 +144,21 @@ export default function Dashboard() {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h1>Dashboard</h1>
-                <div className="card" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Clock size={20} color="var(--accent)" />
-                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold', fontFamily: 'monospace' }}>
-                        {currentTime.toLocaleTimeString()}
-                    </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <h1 style={{ margin: 0 }}>{t('dashboard')}</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.25rem 0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                        <Clock size={18} color="var(--accent)" />
+                        <span style={{ fontSize: '1rem', fontWeight: 'bold', fontFamily: 'monospace' }}>
+                            {currentTime.toLocaleTimeString()}
+                        </span>
+                    </div>
                 </div>
             </div>
 
             {/* Connection Status */}
             <div className="card" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
-                <h3 style={{ marginBottom: '1.5rem' }}>Connection Status</h3>
+                <h3 style={{ marginBottom: '1.5rem' }}>{t('connection_status')}</h3>
                 <div style={{ display: 'flex', gap: '3rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{
@@ -165,7 +169,7 @@ export default function Dashboard() {
                             boxShadow: status.n8n ? '0 0 12px var(--success)' : '0 0 12px var(--error)',
                             transition: 'all 0.3s ease'
                         }}></div>
-                        <span style={{ fontSize: '1.1rem' }}>n8n Container: <strong>{status.n8n ? 'Connected' : 'Disconnected'}</strong></span>
+                        <span style={{ fontSize: '1.1rem' }}>{t('n8n_container')}: <strong>{status.n8n ? t('connected') : t('disconnected')}</strong></span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{
@@ -176,7 +180,7 @@ export default function Dashboard() {
                             boxShadow: status.database ? '0 0 12px var(--success)' : '0 0 12px var(--error)',
                             transition: 'all 0.3s ease'
                         }}></div>
-                        <span style={{ fontSize: '1.1rem' }}>Database: <strong>{status.database ? 'Connected' : 'Disconnected'}</strong></span>
+                        <span style={{ fontSize: '1.1rem' }}>{t('database')}: <strong>{status.database ? t('connected') : t('disconnected')}</strong></span>
                     </div>
                 </div>
             </div>
@@ -185,10 +189,10 @@ export default function Dashboard() {
                 <div className="card">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                         <Clock size={24} color="var(--accent)" />
-                        <h3>Next Backup</h3>
+                        <h3>{t('next_backup')}</h3>
                     </div>
                     <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                        {settings.backup_schedule?.startsWith('interval') ? 'Interval' : 'Scheduled'}
+                        {settings.backup_schedule?.startsWith('interval') ? t('interval') : t('scheduled')}
                     </p>
                     {countdown && <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem', fontSize: '1.2rem', fontFamily: 'monospace' }}>{countdown}</p>}
                 </div>
@@ -196,10 +200,10 @@ export default function Dashboard() {
                 <div className="card">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                         <Database size={24} color="var(--success)" />
-                        <h3>Last Backup</h3>
+                        <h3>{t('last_backup')}</h3>
                     </div>
                     <p style={{ fontSize: '1.2rem' }}>
-                        {lastBackup ? new Date(lastBackup.createdAt).toLocaleString() : 'Never'}
+                        {lastBackup ? new Date(lastBackup.createdAt).toLocaleString() : t('never')}
                     </p>
                     {lastBackup && <p style={{ color: 'var(--text-secondary)' }}>{(lastBackup.size / 1024 / 1024).toFixed(2)} MB</p>}
                 </div>
@@ -207,22 +211,22 @@ export default function Dashboard() {
                 <div className="card">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                         <AlertCircle size={24} color="var(--warning)" />
-                        <h3>Total Backups</h3>
+                        <h3>{t('total_backups')}</h3>
                     </div>
                     <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{backups.length}</p>
                 </div>
             </div>
 
             <div className="card">
-                <h3 style={{ marginBottom: '1rem' }}>Quick Actions</h3>
+                <h3 style={{ marginBottom: '1rem' }}>{t('quick_actions')}</h3>
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                     <button onClick={handleBackupNow} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Play size={16} />
-                        Backup Now
+                        {t('backup_now')}
                     </button>
                     <label className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                         <input type="file" onChange={handleUpload} style={{ display: 'none' }} accept=".tar,.sql,.zip" />
-                        {uploading ? 'Uploading...' : 'Upload Backup'}
+                        {uploading ? t('uploading') : t('upload_backup')}
                     </label>
                 </div>
             </div>

@@ -1,14 +1,15 @@
 {
-    "version": "1.1.0",
-    "releaseDate": "2025-12-07",
-    "releaseNotes": "Додано систему автоматичного оновлення, GitHub Actions, покращено документацію",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.1.0/release.zip",
+    "version": "1.2.2",
+    "releaseDate": "2025-12-10T20:00:00Z",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.2.2/release.zip",
+    "releaseNotes": "UI Improvements, Password Visibility, and Enhanced Updates Page.",
     "minVersion": "1.0.0",
     "changelog": [
-        "Система автоматичного оновлення",
-        "Перевірка оновлень з GitHub",
-        "Rollback функціонал",
-        "UI для управління оновленнями",
-        "GitHub Actions для релізів"
+        "UI: Moved clock to dashboard header",
+        "UI: Added password visibility toggle",
+        "UI: Added version number to sidebar",
+        "Feature: Enhanced Updates page with history and delete option",
+        "Feature: Added Cloud Storage Provider selector (S3, GDrive placeholder)",
+        "Fix: Cleaned up Settings page"
     ]
 }

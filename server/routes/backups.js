@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const backupService = require('../services/backupService');
-const verifyToken = require('../middleware/auth');
+const { authenticateToken: verifyToken } = require('../middleware/auth');
 
 router.get('/', verifyToken, async (req, res) => {
     try {

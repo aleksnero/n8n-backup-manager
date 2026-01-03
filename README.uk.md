@@ -4,7 +4,7 @@
 
 ![n8n Backup Manager](screenshots/banner.png)
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![Docker](https://img.shields.io/badge/docker-required-blue.svg)
@@ -22,6 +22,8 @@
 - ✅ **Автоматичне резервне копіювання** n8n та бази даних
 - ✅ **Підтримка PostgreSQL та SQLite**
 - ✅ **Гнучке планування** бекапів (cron або інтервали)
+- ✅ **Політика зберігання** (авто-видалення старих)
+- ✅ **Хмарні бекапи** (підтримка S3)
 - ✅ **Завантаження та відновлення** бекапів одним кліком
 - ✅ **Захист важливих бекапів** від автоматичного видалення
 - ✅ **Веб-інтерфейс** для управління

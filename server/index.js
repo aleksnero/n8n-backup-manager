@@ -11,7 +11,7 @@ require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
-const VERSION = '1.1.0';
+const VERSION = '1.2.2';
 
 app.use(cors());
 app.use(express.json());
@@ -30,7 +30,13 @@ app.get('*', (req, res) => {
 });
 
 // Sync Database and Start Server
-sequelize.sync().then(() => {
+sequelize.sync().then(async () => {
+  try {
+    await sequelize.query('PRAGMA journal_mode=WAL;');
+    console.log('Database WAL mode enabled');
+  } catch (err) {
+    console.error('Failed to enable WAL mode:', err);
+  }
   console.log('Database synced');
   startScheduler();
   app.listen(port, () => {

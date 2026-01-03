@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Save, RefreshCw, Download, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Save, RefreshCw, Download, AlertTriangle, CheckCircle, Lock, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../context/LanguageContext';
 
 export default function Settings() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [settings, setSettings] = useState({
         n8n_container_name: 'n8n',
         db_type: 'sqlite',
@@ -23,6 +25,15 @@ export default function Settings() {
     const [updateStatus, setUpdateStatus] = useState('idle'); // idle, checking, available, updating, success, error
     const [updateInfo, setUpdateInfo] = useState(null);
     const [updateMessage, setUpdateMessage] = useState('');
+
+    // Password Change State
+    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '' });
+    const [passwordMessage, setPasswordMessage] = useState('');
+
+    // Visibility States
+    const [showDbPassword, setShowDbPassword] = useState(false);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
 
     useEffect(() => {
         fetchSettings();
@@ -51,8 +62,8 @@ export default function Settings() {
     };
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setSettings(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setSettings(prev => ({ ...prev, [name]: type === 'checkbox' ? (checked ? 'true' : 'false') : value }));
     };
 
     const handleScheduleChange = (type, value) => {
@@ -72,8 +83,7 @@ export default function Settings() {
         setUpdateStatus('checking');
         setUpdateMessage('');
         try {
-            // Use /api/settings/update/mock for testing UI, or /api/settings/update/check for real
-            // For now, let's use the check endpoint which calls our service (which might be mocked)
+            // For now, let's use the check endpoint which calls our service
             const res = await axios.post('/api/settings/update/check');
             if (res.data.hasUpdate) {
                 setUpdateStatus('available');
@@ -112,10 +122,20 @@ export default function Settings() {
         e.preventDefault();
         try {
             await axios.post('/api/settings', settings);
-            // alert('Settings saved successfully!'); // Removed alert
-            navigate('/'); // Redirect to dashboard
+            alert(t('save_settings') + ' OK!');
         } catch (error) {
             alert('Failed to save settings: ' + error.response?.data?.message);
+        }
+    };
+
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post('/api/auth/change-password', passwordData);
+            setPasswordMessage(t('pass_changed_success'));
+            setPasswordData({ currentPassword: '', newPassword: '' });
+        } catch (error) {
+            setPasswordMessage(t('pass_change_error') + (error.response?.data?.message || error.message));
         }
     };
 
@@ -123,13 +143,13 @@ export default function Settings() {
 
     return (
         <div style={{ maxWidth: '800px' }}>
-            <h1 style={{ marginBottom: '2rem' }}>Settings</h1>
+            <h1 style={{ marginBottom: '2rem' }}>{t('settings_title')}</h1>
             <div className="card">
                 <form onSubmit={handleSubmit}>
-                    <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Container Configuration</h3>
+                    <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>{t('n8n_settings')}</h3>
 
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Database Container Name</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('n8n_container')}</label>
                         <input
                             type="text"
                             name="n8n_container_name"
@@ -140,7 +160,7 @@ export default function Settings() {
                     </div>
 
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Database Type</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Title</label>
                         <select name="db_type" value={settings.db_type} onChange={handleChange}>
                             <option value="sqlite">SQLite</option>
                             <option value="postgres">PostgreSQL</option>
@@ -170,12 +190,32 @@ export default function Settings() {
                             </div>
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Database Password</label>
-                                <input
-                                    type="password"
-                                    name="db_password"
-                                    value={settings.db_password}
-                                    onChange={handleChange}
-                                />
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type={showDbPassword ? "text" : "password"}
+                                        name="db_password"
+                                        value={settings.db_password}
+                                        onChange={handleChange}
+                                        style={{ paddingRight: '40px' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDbPassword(!showDbPassword)}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '10px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--text-secondary)',
+                                            padding: 0
+                                        }}
+                                    >
+                                        {showDbPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </button>
+                                </div>
                             </div>
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Database Name</label>
@@ -189,7 +229,7 @@ export default function Settings() {
                         </>
                     )}
 
-                    <h3 style={{ marginBottom: '1.5rem', marginTop: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Backup Schedule</h3>
+                    <h3 style={{ marginBottom: '1.5rem', marginTop: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>{t('backup_settings')}</h3>
 
                     <div style={{ marginBottom: '1.5rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>Schedule Type</label>
@@ -239,68 +279,184 @@ export default function Settings() {
                     </div>
 
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Protected Backups Count</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('backup_retention_count')}</label>
                         <input
                             type="number"
                             name="backup_retention_count"
                             value={settings.backup_retention_count}
                             onChange={handleChange}
                         />
-                        <small style={{ color: 'var(--text-secondary)' }}>Number of most recent backups to keep protected from auto-deletion.</small>
-                        <small style={{ color: 'var(--text-secondary)' }}>Number of most recent backups to keep protected from auto-deletion.</small>
+                        <small style={{ color: 'var(--text-secondary)' }}>{t('retention_help')}</small>
                     </div>
 
-                    <h3 style={{ marginBottom: '1.5rem', marginTop: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>System Updates</h3>
-                    <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <div>
-                                <strong style={{ display: 'block' }}>Current Version: {settings.version || '1.0.0'}</strong>
-                                {updateMessage && <span style={{ color: updateStatus === 'error' ? 'var(--error)' : 'var(--success)', fontSize: '0.9rem' }}>{updateMessage}</span>}
+                    <h3 style={{ marginBottom: '1.5rem', marginTop: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>{t('cloud_settings')}</h3>
+
+                    <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                        <label className="checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', background: 'var(--bg-secondary)', padding: '1rem 2rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                            <input
+                                type="checkbox"
+                                name="aws_s3_enabled"
+                                checked={settings.aws_s3_enabled === 'true'}
+                                onChange={handleChange}
+                                style={{ width: '20px', height: '20px' }}
+                            />
+                            <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{t('enable_cloud')}</span>
+                        </label>
+                    </div>
+
+                    {settings.aws_s3_enabled === 'true' && (
+                        <div style={{ paddingLeft: '1rem', borderLeft: '2px solid var(--border)' }}>
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Storage Provider</label>
+                                <select
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                                    value="s3"
+                                    onChange={() => alert(t('s3_provider_warning'))}
+                                >
+                                    <option value="s3">S3 Compatible (MinIO, AWS, DigitalOcean)</option>
+                                    <option value="gdrive" disabled>Google Drive (Coming Soon)</option>
+                                    <option value="onedrive" disabled>Microsoft OneDrive (Coming Soon)</option>
+                                    <option value="dropbox" disabled>Dropbox (Coming Soon)</option>
+                                </select>
                             </div>
-                            {updateStatus === 'idle' && (
-                                <button type="button" onClick={checkForUpdates} className="btn" disabled={loading} style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <RefreshCw size={16} /> Check for Updates
-                                </button>
-                            )}
-                            {updateStatus === 'checking' && (
-                                <button type="button" disabled className="btn" style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <RefreshCw size={16} className="spin" /> Checking...
-                                </button>
-                            )}
-                            {updateStatus === 'available' && (
-                                <button type="button" onClick={applyUpdate} className="btn btn-primary" style={{ display: 'flex', gap: '0.5rem', background: 'var(--success)' }}>
-                                    <Download size={16} /> Update Now
-                                </button>
-                            )}
-                            {updateStatus === 'updating' && (
-                                <button type="button" disabled className="btn" style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <RefreshCw size={16} className="spin" /> Updating...
-                                </button>
-                            )}
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('endpoint')}</label>
+                                <input
+                                    type="text"
+                                    name="aws_s3_endpoint"
+                                    value={settings.aws_s3_endpoint || ''}
+                                    onChange={handleChange}
+                                    placeholder="https://s3.amazonaws.com"
+                                />
+                                <small style={{ color: 'var(--text-secondary)' }}>Leave empty for AWS. Required for MinIO, DigitalOcean Spaces, etc.</small>
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('region')}</label>
+                                <input
+                                    type="text"
+                                    name="aws_s3_region"
+                                    value={settings.aws_s3_region || ''}
+                                    onChange={handleChange}
+                                    placeholder="us-east-1"
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('bucket')}</label>
+                                <input
+                                    type="text"
+                                    name="aws_s3_bucket"
+                                    value={settings.aws_s3_bucket || ''}
+                                    onChange={handleChange}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('access_key')}</label>
+                                <input
+                                    type="text"
+                                    name="aws_s3_access_key"
+                                    value={settings.aws_s3_access_key || ''}
+                                    onChange={handleChange}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('secret_key')}</label>
+                                <input
+                                    type="password"
+                                    name="aws_s3_secret_key"
+                                    value={settings.aws_s3_secret_key || ''}
+                                    onChange={handleChange}
+                                />
+                            </div>
                         </div>
+                    )}
 
-                        {updateStatus === 'available' && updateInfo && (
-                            <div style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', marginBottom: '0.5rem' }}>
-                                    <CheckCircle size={16} /> <strong>New Version Available: {updateInfo.remoteVersion}</strong>
-                                </div>
-                                {updateInfo.releaseNotes && (
-                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{updateInfo.releaseNotes}</p>
-                                )}
-                            </div>
-                        )}
 
-                        {updateStatus === 'success' && (
-                            <div style={{ background: 'rgba(0, 255, 0, 0.1)', padding: '1rem', borderRadius: '4px', border: '1px solid var(--success)', color: 'var(--success)' }}>
-                                <CheckCircle size={16} style={{ display: 'inline', marginRight: '5px' }} />
-                                <strong>Success!</strong> Application is restarting...
-                            </div>
-                        )}
-                    </div>
+                    {/* Update Block Removed */}
+
 
                     <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Save size={16} />
-                        Save Settings
+                        {t('save_settings')}
+                    </button>
+                </form>
+            </div>
+
+            {/* Password Change Section */}
+            <div className="card" style={{ marginTop: '2rem' }}>
+                <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>{t('change_password')}</h3>
+                <form onSubmit={handlePasswordChange}>
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('current_password')}</label>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type={showCurrentPassword ? "text" : "password"}
+                                value={passwordData.currentPassword}
+                                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                                required
+                                style={{ paddingRight: '40px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: 'var(--text-secondary)',
+                                    padding: 0
+                                }}
+                            >
+                                {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('new_password')}</label>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type={showNewPassword ? "text" : "password"}
+                                value={passwordData.newPassword}
+                                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                required
+                                style={{ paddingRight: '40px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: 'var(--text-secondary)',
+                                    padding: 0
+                                }}
+                            >
+                                {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
+                    </div>
+                    {passwordMessage && (
+                        <div style={{ marginBottom: '1rem', color: passwordMessage.includes('Success') || passwordMessage.includes('успішно') ? 'var(--success)' : 'var(--error)' }}>
+                            {passwordMessage}
+                        </div>
+                    )}
+                    <button type="submit" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Lock size={16} />
+                        {t('change_pass_btn')}
                     </button>
                 </form>
             </div>

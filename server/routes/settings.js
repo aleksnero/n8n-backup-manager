@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Settings = require('../models/Settings');
-const verifyToken = require('../middleware/auth');
+const { authenticateToken: verifyToken } = require('../middleware/auth');
 const { startScheduler } = require('../services/scheduler');
 
 router.get('/', verifyToken, async (req, res) => {
@@ -11,6 +11,8 @@ router.get('/', verifyToken, async (req, res) => {
         settings.forEach(s => {
             settingsMap[s.key] = s.value;
         });
+        // Inject app version
+        settingsMap.version = require('../package.json').version;
         res.json(settingsMap);
     } catch (error) {
         res.status(500).send({ message: error.message });
