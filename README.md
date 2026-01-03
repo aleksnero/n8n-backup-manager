@@ -6,7 +6,7 @@
 
 [![From Ukraine with Love](https://img.shields.io/badge/From%20Ukraine-with%20Love!-%230057B8?style=for-the-badge&logo=ukraine&labelColor=%23FFD700)](https://stand-with-ukraine.pp.ua)
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![Docker](https://img.shields.io/badge/docker-required-blue.svg)
@@ -23,13 +23,18 @@
 
 - ✅ **Automatic Backup** of n8n workflows and database
 - ✅ **PostgreSQL & SQLite Support**
+- ✅ **Backup Compression** (Gzip)
+- ✅ **Backup Encryption** (AES-256)
+- ✅ **Cloud Backups** (S3, Google Drive, OneDrive)
 - ✅ **Flexible Scheduling** (cron or intervals)
+- ✅ **Backup Retention Policy** (auto-delete old backups)
 - ✅ **One-Click Backup & Restore**
 - ✅ **Protected Backups** (prevent auto-deletion)
 - ✅ **Web Interface** for management
 - ✅ **Automatic Update System** from GitHub
 - ✅ **Rollback** capability
 - ✅ **Connection Status Monitoring**
+- ✅ **Password Management**
 - ✅ **Detailed Logging**
 
 ## 📸 Screenshots
@@ -118,7 +123,8 @@ docker-compose up -d --build
 Go to **Settings** and configure:
 
 **For Docker:**
-- **Database Container Name**: DB container name (e.g., `postgres-1`)
+- **n8n Container Name**: Name of your n8n container
+- **Database Container Name**: Name of your DB container (e.g., `postgres-1`)
 - **Database Type**: PostgreSQL or SQLite
 
 **For PostgreSQL:**
@@ -129,9 +135,19 @@ Go to **Settings** and configure:
 **For SQLite:**
 - **Database Path**: path to DB file (e.g., `/home/node/.n8n/database.sqlite`)
 
+**Backup Optimization:**
+- **Compression**: Enable Gzip compression to save space
+- **Encryption**: Secure your backups with AES-256 (Password required)
+
+**Cloud Configuration:**
+- **Provider**: S3 Compatible, Google Drive, or Microsoft OneDrive
+- **S3**: Configure endpoint, region, bucket, and keys
+- **Google Drive**: Use Service Account JSON or OAuth2 credentials
+- **OneDrive**: Use Refresh Token or OAuth2 credentials
+
 **Scheduling:**
-- **Backup Schedule**: select interval (1, 6, 12, 24 hours) or cron expression
-- **Protected Backups Count**: number of backups to keep from deletion
+- **Backup Schedule**: select interval (hours/minutes) or cron expression
+- **Max Backups to Keep**: number of recent backups to keep before auto-deletion (excluding protected ones)
 
 ### Creating Backups
 
