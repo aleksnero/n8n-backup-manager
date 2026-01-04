@@ -145,6 +145,9 @@ Go to **Settings** and configure:
 - **Google Drive**: Use Service Account JSON or OAuth2 credentials
 - **OneDrive**: Use Refresh Token or OAuth2 credentials
 
+> [!TIP]
+> **[View Detailed Cloud Setup Guide](CLOUD_SETUP.md)** for step-by-step instructions on Google Drive and OneDrive configuration.
+
 **Scheduling:**
 - **Backup Schedule**: select interval (hours/minutes) or cron expression
 - **Max Backups to Keep**: number of recent backups to keep before auto-deletion (excluding protected ones)
@@ -303,11 +306,3 @@ Made for the n8n community with ❤️
 **[⬆ Back to Top](#n8n-backup-manager)**
 
 </div>
-
-
-
-
-
-
-
-

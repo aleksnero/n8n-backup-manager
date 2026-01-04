@@ -143,6 +143,9 @@ docker-compose up -d --build
 - **Google Drive**: використання JSON сервісного акаунту або OAuth2
 - **OneDrive**: використання Refresh Token або OAuth2
 
+> [!TIP]
+> **[Переглянути детальну інструкцію з налаштування хмари](CLOUD_SETUP.uk.md)** для отримання покрокових вказівок щодо Google Drive та OneDrive.
+
 **Планування:**
 - **Backup Schedule**: інтервал (години/хвилини) або cron вираз
 - **Max Backups to Keep**: кількість останніх бекапів для зберігання (крім захищених)
