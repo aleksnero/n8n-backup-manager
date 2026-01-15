@@ -3,6 +3,7 @@ const path = require('path');
 const AdmZip = require('adm-zip');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const semver = require('semver');
+const { execSync } = require('child_process');
 
 const CURRENT_VERSION = require('../package.json').version;
 const UPDATE_SERVER_URL = process.env.UPDATE_SERVER_URL || 'https://raw.githubusercontent.com/aleksnero/n8n-backup-manager/main/version.json';
@@ -57,6 +58,11 @@ class UpdateService {
      */
     async downloadUpdate(downloadUrl) {
         try {
+            // Security validation: only allow downloads from official repo
+            if (!downloadUrl.startsWith('https://github.com/aleksnero/n8n-backup-manager/')) {
+                throw new Error('Invalid download URL. Updates are only allowed from the official GitHub repository.');
+            }
+
             console.log(`Downloading update from: ${downloadUrl}`);
             const response = await fetch(downloadUrl);
             if (!response.ok) {
@@ -94,24 +100,56 @@ class UpdateService {
 
             const zip = new AdmZip();
 
-            // Backup critical files
-            const filesToBackup = [
+            // Determine the actual project root and files to backup
+            // In Docker, we are in /app/services, root is /app, files are package.json, index.js...
+            // In Local, we are in server/services, root is server, files might be in . or ../
+            const filesToBackup = [];
+
+            // Files relative to rootDir
+            const potentialFiles = [
+                'package.json',
+                'index.js',
+                'database.js',
+                'version.json',
+                'CHANGELOG.md',
+                'README.md',
                 'server/package.json',
                 'server/index.js',
                 'server/database.js',
-                'data' // Include database
+                'routes',
+                'services',
+                'models',
+                'middleware',
+                'public',
+                'data',
+                'server/routes',
+                'server/services',
+                'server/models',
+                'server/middleware',
+                'server/public',
+                'server/data'
             ];
 
-            filesToBackup.forEach(file => {
+            potentialFiles.forEach(file => {
                 const fullPath = path.join(rootDir, file);
                 if (fs.existsSync(fullPath)) {
+                    // Extract the destination path (remove any leading server/ for the zip)
+                    const zipPath = file.startsWith('server/') ? file.substring(7) : file;
+
                     if (fs.statSync(fullPath).isDirectory()) {
-                        zip.addLocalFolder(fullPath, file);
+                        zip.addLocalFolder(fullPath, zipPath);
                     } else {
-                        zip.addLocalFile(fullPath, path.dirname(file));
+                        // For files, we need to ensure the parent folder exists in the zip if needed
+                        const zipDir = path.dirname(zipPath);
+                        zip.addLocalFile(fullPath, zipDir === '.' ? '' : zipDir);
                     }
+                    filesToBackup.push(file);
                 }
             });
+
+            if (filesToBackup.length === 0) {
+                throw new Error('No files found to backup');
+            }
 
             zip.writeZip(backupPath);
             console.log(`Pre-update backup created: ${backupName}`);
@@ -136,9 +174,28 @@ class UpdateService {
 
             // 2. Extract new files
             const updateZip = new AdmZip(zipFilePath);
-            updateZip.extractAllTo(rootDir, true); // overwrite = true
 
-            console.log('Update extracted successfully.');
+            // On Windows, files might be locked. Extraction might fail partially.
+            // We'll catch and log specifically.
+            try {
+                console.log('Update extracted successfully.');
+
+                // 2.5 Install new dependencies if they exist
+                try {
+                    console.log('Installing new dependencies...');
+                    execSync('npm install --production --no-audit --no-fund', {
+                        cwd: rootDir,
+                        stdio: 'inherit'
+                    });
+                    console.log('Dependencies installed successfully.');
+                } catch (installError) {
+                    console.error('Failed to install dependencies:', installError);
+                    // We continue even if npm install fails, as it might be a minor issue
+                }
+            } catch (extractError) {
+                console.error('Extraction failed. Some files might be in use:', extractError);
+                throw new Error(`Extraction failed: ${extractError.message}. If running on Windows, try stopping the service before updating.`);
+            }
 
             // 3. Clean up
             fs.unlinkSync(zipFilePath);
@@ -160,7 +217,7 @@ class UpdateService {
     /**
      * Rollback to previous version
      */
-    async rollback() {
+    async rollback(filename = null) {
         try {
             const backupDir = path.join(__dirname, '..', 'backups', 'pre_update_backups');
 
@@ -168,22 +225,62 @@ class UpdateService {
                 throw new Error('No backup directory found');
             }
 
-            // Get the most recent backup
-            const backups = fs.readdirSync(backupDir)
-                .filter(file => file.startsWith('backup_v') && file.endsWith('.zip'))
-                .sort()
-                .reverse();
+            let backupToUse;
+            if (filename) {
+                backupToUse = filename;
+            } else {
+                // Get the most recent backup
+                const backups = fs.readdirSync(backupDir)
+                    .filter(file => file.startsWith('backup_v') && file.endsWith('.zip'))
+                    .sort()
+                    .reverse();
 
-            if (backups.length === 0) {
-                throw new Error('No backups available for rollback');
+                if (backups.length === 0) {
+                    throw new Error('No backups available for rollback');
+                }
+                backupToUse = backups[0];
             }
 
-            const latestBackup = path.join(backupDir, backups[0]);
-            console.log(`Rolling back to: ${backups[0]}`);
+            const backupPath = path.join(backupDir, backupToUse);
+            if (!fs.existsSync(backupPath)) {
+                throw new Error('Specified backup file not found');
+            }
+
+            console.log(`Rolling back to: ${backupToUse}`);
 
             const rootDir = path.join(__dirname, '..');
-            const zip = new AdmZip(latestBackup);
-            zip.extractAllTo(rootDir, true);
+            const zip = new AdmZip(backupPath);
+
+            // Check if all entries start with 'server/' or if it's a mix
+            // If it's a mix but includes 'server/', we might need to extract carefully
+            const entries = zip.getEntries();
+            const hasServerFolder = entries.some(e => e.entryName.startsWith('server/'));
+
+            // If the current environment is flat (Docker) but zip has server folder, flatten it
+            // We can detect flat environment if package.json is in rootDir
+            const isFlatEnv = fs.existsSync(path.join(rootDir, 'package.json')) && !fs.existsSync(path.join(rootDir, 'server', 'package.json'));
+
+            if (isFlatEnv && hasServerFolder) {
+                console.log('Detected flat environment and nested backup. Flattening extraction...');
+                entries.forEach(entry => {
+                    let targetName = entry.entryName;
+                    if (targetName.startsWith('server/')) {
+                        targetName = targetName.substring(7);
+                    }
+                    if (targetName) {
+                        const targetPath = path.join(rootDir, targetName);
+                        if (entry.isDirectory) {
+                            if (!fs.existsSync(targetPath)) fs.mkdirSync(targetPath, { recursive: true });
+                        } else {
+                            const dir = path.dirname(targetPath);
+                            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                            fs.writeFileSync(targetPath, entry.getData());
+                        }
+                    }
+                });
+            } else {
+                zip.extractAllTo(rootDir, true);
+            }
 
             console.log('Rollback successful. Restarting server...');
             setTimeout(() => {
@@ -196,6 +293,21 @@ class UpdateService {
             console.error('Rollback failed:', error);
             throw error;
         }
+    }
+
+    /**
+     * Get path for an update backup file
+     */
+    getUpdateBackupPath(filename) {
+        const backupDir = path.join(__dirname, '..', 'backups', 'pre_update_backups');
+        const filePath = path.resolve(backupDir, filename);
+
+        // Security check: ensure file is within backupDir
+        if (!filePath.startsWith(backupDir)) {
+            throw new Error('Unauthorized access');
+        }
+
+        return filePath;
     }
 
     /**
@@ -213,7 +325,8 @@ class UpdateService {
                 .filter(file => file.startsWith('backup_v') && file.endsWith('.zip'))
                 .map(file => {
                     const stats = fs.statSync(path.join(backupDir, file));
-                    const match = file.match(/backup_v(.+)_(\d+)\.zip/);
+                    // Improved regex to handle backup_v1.2.2.zip or backup_v1.2.2_1767472730511.zip
+                    const match = file.match(/backup_v([\d\.]+)(?:_(\d+))?\.zip/);
                     return {
                         filename: file,
                         version: match ? match[1] : 'unknown',

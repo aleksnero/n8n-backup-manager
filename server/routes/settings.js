@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Settings = require('../models/Settings');
-const { authenticateToken: verifyToken } = require('../middleware/auth');
+const verifyToken = require('../middleware/auth');
 const { startScheduler } = require('../services/scheduler');
 
 router.get('/', verifyToken, async (req, res) => {
@@ -36,7 +36,7 @@ router.post('/', verifyToken, async (req, res) => {
     }
 });
 
-router.post('/update/mock', async (req, res) => {
+router.post('/update/mock', verifyToken, async (req, res) => {
     try {
         // This is a special endpoint to SIMULATE an update for testing purposes
         // It pretends there is an update available
@@ -52,7 +52,7 @@ router.post('/update/mock', async (req, res) => {
     }
 });
 
-router.post('/update/check', async (req, res) => {
+router.post('/update/check', verifyToken, async (req, res) => {
     try {
         const updateService = require('../services/updateService');
         const result = await updateService.checkForUpdates();
@@ -62,7 +62,7 @@ router.post('/update/check', async (req, res) => {
     }
 });
 
-router.post('/update/apply', async (req, res) => {
+router.post('/update/apply', verifyToken, async (req, res) => {
     try {
         const { downloadUrl } = req.body;
         if (!downloadUrl) return res.status(400).json({ error: 'Download URL required' });

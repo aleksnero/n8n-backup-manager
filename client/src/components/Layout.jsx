@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
@@ -11,7 +11,7 @@ export default function Layout() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [version, setVersion] = useState('');
 
-    useState(() => {
+    useEffect(() => {
         // Fetch version
         import('axios').then(axios => {
             axios.get('/api/settings').then(res => {

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const updateService = require('../services/updateService');
-const { authenticateToken } = require('../middleware/auth');
+const authenticateToken = require('../middleware/auth');
 
 // All routes require authentication
 router.use(authenticateToken);
@@ -41,7 +41,10 @@ router.post('/apply', async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('Apply update error:', error);
-        res.status(500).json({ message: 'Failed to apply update', error: error.message });
+        res.status(500).json({
+            message: error.message || 'Failed to apply update',
+            error: error.stack
+        });
     }
 });
 
@@ -51,11 +54,69 @@ router.post('/apply', async (req, res) => {
  */
 router.post('/rollback', async (req, res) => {
     try {
-        const result = await updateService.rollback();
+        const { filename } = req.body;
+        const result = await updateService.rollback(filename);
         res.json(result);
     } catch (error) {
         console.error('Rollback error:', error);
         res.status(500).json({ message: 'Failed to rollback', error: error.message });
+    }
+});
+
+/**
+ * GET /api/updates/download/:filename
+ * Download an update backup
+ */
+router.get('/download/:filename', async (req, res) => {
+    try {
+        const { filename } = req.params;
+        const filePath = updateService.getUpdateBackupPath(filename);
+        res.download(filePath);
+    } catch (error) {
+        console.error('Download error:', error);
+        res.status(500).json({ message: 'Failed to download backup', error: error.message });
+    }
+});
+
+/**
+ * POST /api/updates/upload
+ * Upload an update backup (.zip)
+ */
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = path.join(__dirname, '..', 'backups', 'pre_update_backups');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        // Ensure it has .zip extension and a safe name
+        const name = file.originalname.endsWith('.zip') ? file.originalname : `${file.originalname}.zip`;
+        cb(null, name);
+    }
+});
+
+const upload = multer({
+    storage,
+    fileFilter: (req, file, cb) => {
+        if (path.extname(file.originalname).toLowerCase() === '.zip') {
+            cb(null, true);
+        } else {
+            cb(new Error('Only .zip files are allowed'));
+        }
+    }
+});
+
+router.post('/upload', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) throw new Error('No file uploaded');
+        res.json({ success: true, message: 'File uploaded successfully', filename: req.file.filename });
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).json({ message: 'Failed to upload file', error: error.message });
     }
 });
 

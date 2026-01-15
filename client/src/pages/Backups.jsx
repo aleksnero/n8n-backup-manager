@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Download, RotateCcw, Trash2, Shield } from 'lucide-react';
+import { Download, RotateCcw, Trash2, Shield, HardDrive, Cloud } from 'lucide-react';
 
 export default function Backups() {
     const [backups, setBackups] = useState([]);
@@ -22,22 +22,22 @@ export default function Backups() {
     };
 
     const handleRestore = async (id) => {
-        if (!confirm('Are you sure you want to restore this backup? Current data will be overwritten.')) return;
+        if (!window.confirm('Are you sure you want to restore this backup? Current data will be overwritten.')) return;
         try {
             await axios.post(`/api/backups/${id}/restore`);
             alert('Restore started successfully!');
         } catch (error) {
-            alert('Restore failed: ' + error.response?.data?.message);
+            alert('Restore failed: ' + (error.response?.data?.message || error.message));
         }
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this backup?')) return;
+        if (!window.confirm('Are you sure you want to delete this backup?')) return;
         try {
             await axios.delete(`/api/backups/${id}`);
             fetchBackups();
         } catch (error) {
-            alert('Delete failed: ' + error.response?.data?.message);
+            alert('Delete failed: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -69,6 +69,19 @@ export default function Backups() {
         }
     };
 
+    const renderStorageIcons = (location) => {
+        if (!location) location = 'local';
+        const locations = location.split(',');
+        return (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {locations.includes('local') && <HardDrive size={16} title="Local" color="var(--text-secondary)" />}
+                {locations.includes('gdrive') && <Cloud size={16} title="Google Drive" color="#4285F4" />}
+                {locations.includes('onedrive') && <Cloud size={16} title="OneDrive" color="#0078D4" />}
+                {locations.includes('s3') && <Cloud size={16} title="S3" color="var(--warning)" />}
+            </div>
+        );
+    };
+
     if (loading) return <div>Loading...</div>;
 
     return (
@@ -82,6 +95,7 @@ export default function Backups() {
                             <th>Date</th>
                             <th>Size</th>
                             <th>Type</th>
+                            <th>Storage</th>
                             <th>Protected</th>
                             <th>Actions</th>
                         </tr>
@@ -103,6 +117,7 @@ export default function Backups() {
                                         {backup.type}
                                     </span>
                                 </td>
+                                <td>{renderStorageIcons(backup.storageLocation)}</td>
                                 <td>
                                     <button
                                         onClick={() => handleToggleProtection(backup.id, backup.isProtected)}
@@ -124,7 +139,17 @@ export default function Backups() {
                                         <button onClick={() => handleRestore(backup.id)} className="btn btn-secondary" title="Restore">
                                             <RotateCcw size={16} />
                                         </button>
-                                        <button onClick={() => handleDelete(backup.id)} className="btn btn-secondary" style={{ color: 'var(--error)' }} title="Delete">
+                                        <button
+                                            onClick={() => !backup.isProtected && handleDelete(backup.id)}
+                                            className="btn btn-secondary"
+                                            style={{
+                                                color: backup.isProtected ? 'var(--text-secondary)' : 'var(--error)',
+                                                opacity: backup.isProtected ? 0.5 : 1,
+                                                cursor: backup.isProtected ? 'not-allowed' : 'pointer'
+                                            }}
+                                            title={backup.isProtected ? "Unprotect to delete" : "Delete"}
+                                            disabled={backup.isProtected}
+                                        >
                                             <Trash2 size={16} />
                                         </button>
                                     </div>
@@ -133,7 +158,7 @@ export default function Backups() {
                         ))}
                         {backups.length === 0 && (
                             <tr>
-                                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                                <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
                                     No backups found.
                                 </td>
                             </tr>

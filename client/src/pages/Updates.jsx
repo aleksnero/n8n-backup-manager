@@ -51,24 +51,68 @@ export default function Updates() {
                 window.location.reload();
             }, 5000);
         } catch (err) {
-            setError(t('update_error') + (err.response?.data?.message || err.message));
+            const errorMsg = err.response?.data?.message || err.message;
+            setError(t('update_error') + errorMsg);
             setLoading(false);
         }
     };
 
-    const rollback = async () => {
-        if (!confirm(t('confirm_rollback'))) return;
+    const downloadBackup = async (filename) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`/api/updates/download/${filename}`, {
+                responseType: 'blob',
+                headers: { 'x-access-token': token }
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        } catch (err) {
+            alert(t('upload_failed') + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const uploadBackup = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        setLoading(true);
+        try {
+            await axios.post('/api/updates/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            alert(t('upload_success'));
+            fetchHistory();
+        } catch (err) {
+            alert(t('upload_failed') + (err.response?.data?.message || err.message));
+        } finally {
+            setLoading(false);
+            e.target.value = null; // Reset input
+        }
+    };
+
+    const rollbackToVersion = async (filename) => {
+        if (!confirm(t('confirm_rollback_version'))) return;
 
         setLoading(true);
         setError('');
         try {
-            await axios.post('/api/updates/rollback');
+            await axios.post('/api/updates/rollback', { filename });
             alert(t('rollback_success'));
             setTimeout(() => {
                 window.location.reload();
             }, 5000);
         } catch (err) {
-            setError(t('update_error') + (err.response?.data?.message || err.message));
+            const errorMsg = err.response?.data?.message || err.message;
+            setError(t('update_error') + errorMsg);
             setLoading(false);
         }
     };
@@ -78,12 +122,12 @@ export default function Updates() {
     };
 
     const deleteHistoryItem = async (filename) => {
-        if (!confirm('Delete this backup?')) return;
+        if (!confirm(t('confirm_delete_backup'))) return;
         try {
             await axios.delete(`/api/updates/history/${filename}`);
             fetchHistory();
         } catch (err) {
-            alert('Failed to delete history: ' + err.message);
+            alert(t('update_error') + err.message);
         }
     };
 
@@ -101,17 +145,11 @@ export default function Updates() {
                         <RefreshCw size={16} className={checking ? 'spinning' : ''} />
                         {checking ? t('checking') : t('check_updates')}
                     </button>
-                    {history.length > 0 && (
-                        <button
-                            onClick={rollback}
-                            disabled={loading}
-                            className="btn btn-warning"
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--warning)', color: '#000' }}
-                        >
-                            <RotateCcw size={16} />
-                            {t('rollback_btn')}
-                        </button>
-                    )}
+                    <label className="btn btn-warning" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--warning)', color: '#000', cursor: 'pointer', margin: 0 }}>
+                        <Download size={16} />
+                        {t('upload_update')}
+                        <input type="file" accept=".zip" onChange={uploadBackup} style={{ display: 'none' }} />
+                    </label>
                 </div>
             </div>
 
@@ -167,7 +205,7 @@ export default function Updates() {
                             </div>
                             <div>
                                 <h4 style={{ marginBottom: '0.25rem' }}>{t('latest_version_msg')}</h4>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>You are running the latest version.</p>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{t('latest_version_msg')}</p>
                             </div>
                         </div>
                     )}
@@ -207,7 +245,7 @@ export default function Updates() {
                 history.length === 0 ? (
                     <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
                         <HardDrive size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                        <p>No local update backups found.</p>
+                        <p>{t('no_backups_found')}</p>
                     </div>
                 ) : (
                     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -236,7 +274,7 @@ export default function Updates() {
                                                 }}>
                                                     v{item.version}
                                                 </span>
-                                                {index === 0 && <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: 'var(--accent)' }}>(Latest Backup)</span>}
+                                                {index === 0 && <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: 'var(--accent)' }}>({t('latest')})</span>}
                                             </td>
                                             <td style={{ padding: '1rem' }}>{new Date(item.date).toLocaleString()}</td>
                                             <td style={{ padding: '1rem' }}>{formatBytes(item.size)}</td>
@@ -244,14 +282,33 @@ export default function Updates() {
                                                 {item.filename}
                                             </td>
                                             <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                                <button
-                                                    onClick={() => deleteHistoryItem(item.filename)}
-                                                    className="btn btn-sm"
-                                                    title="Delete Backup"
-                                                    style={{ color: 'var(--error)', background: 'transparent', padding: '0.5rem' }}
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                    <button
+                                                        onClick={() => downloadBackup(item.filename)}
+                                                        className="btn btn-sm"
+                                                        title={t('download_update')}
+                                                        style={{ color: 'var(--accent)', background: 'transparent', padding: '0.5rem' }}
+                                                    >
+                                                        <Download size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => rollbackToVersion(item.filename)}
+                                                        className="btn btn-sm"
+                                                        title={t('rollback_btn')}
+                                                        disabled={loading}
+                                                        style={{ color: 'var(--warning)', background: 'transparent', padding: '0.5rem' }}
+                                                    >
+                                                        <RotateCcw size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => deleteHistoryItem(item.filename)}
+                                                        className="btn btn-sm"
+                                                        title={t('delete')}
+                                                        style={{ color: 'var(--error)', background: 'transparent', padding: '0.5rem' }}
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

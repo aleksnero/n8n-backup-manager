@@ -3,7 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { authenticateToken } = require('../middleware/auth');
+const authenticateToken = require('../middleware/auth');
 
 router.post('/login', async (req, res) => {
     try {
@@ -85,7 +85,7 @@ router.post('/setup', async (req, res) => {
 router.post('/change-password', authenticateToken, async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
-        const userId = req.user.id;
+        const userId = req.userId;
 
         const user = await User.findByPk(userId);
         if (!user) {

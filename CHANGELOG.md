@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.3.0] - 2026-01-03
+### Added
+- Google Drive & Microsoft OneDrive cloud backup support.
+- Backup Compression (Gzip) and Encryption (AES-256).
+- Improved Dashboard status monitoring for n8n and Database.
+- Separate settings for n8n container and Database container.
+- Better localization for cloud service status.
+- New README documentation.
+
+### Fixed
+- App Rollback: Fixed partial rollback by including all critical folders (public, routes, etc.) in the pre-update backup.
+- Update Download: Fixed authentication issue when downloading update backups from the UI.
+- Docker Compatibility: Improved path mapping for rollbacks inside Docker containers.
+- Version Consistency: Standardized version to 1.3.0 across all files.
+- Update System: Fixed localization typo and improved error reporting and version parsing in history.
+
 ## [1.2.1] - 2025-12-09
 ### Added
 - Multi-language support (English/Ukrainian) with UI switcher.

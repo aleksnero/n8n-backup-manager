@@ -11,7 +11,7 @@ require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
-const VERSION = '1.2.2';
+const VERSION = '1.3.0';
 
 app.use(cors());
 app.use(express.json());
@@ -30,7 +30,7 @@ app.get('*', (req, res) => {
 });
 
 // Sync Database and Start Server
-sequelize.sync().then(async () => {
+sequelize.sync({ alter: true }).then(async () => {
   try {
     await sequelize.query('PRAGMA journal_mode=WAL;');
     console.log('Database WAL mode enabled');
@@ -39,10 +39,15 @@ sequelize.sync().then(async () => {
   }
   console.log('Database synced');
   startScheduler();
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-    console.log(`Backup Manager Version: ${VERSION}`);
+  const server = app.listen(port, () => {
+    console.log('----------------------------------------');
+    console.log(`Backup Manager v${VERSION} STARTED`);
+    console.log('----------------------------------------');
   });
+
+  // Increase timeout to 10 minutes for long restore operations
+  server.timeout = 600000;
+  server.keepAliveTimeout = 610000;
 }).catch((err) => {
   console.error('Failed to sync database:', err);
 });

@@ -9,6 +9,7 @@ export default function Settings() {
     const { t } = useTranslation();
     const [settings, setSettings] = useState({
         n8n_container_name: 'n8n',
+        db_container_name: 'postgres',
         db_type: 'sqlite',
         db_path: '/home/node/.n8n/database.sqlite',
         db_user: 'n8n',
@@ -18,8 +19,8 @@ export default function Settings() {
         backup_retention_count: '10'
     });
     const [loading, setLoading] = useState(true);
-    const [scheduleType, setScheduleType] = useState('cron'); // 'cron' or 'interval'
-    const [intervalHours, setIntervalHours] = useState(1);
+    const [intervalValue, setIntervalValue] = useState(1);
+    const [intervalUnit, setIntervalUnit] = useState('hours'); // 'hours' or 'minutes'
 
     // Update State
     const [updateStatus, setUpdateStatus] = useState('idle'); // idle, checking, available, updating, success, error
@@ -34,6 +35,7 @@ export default function Settings() {
     const [showDbPassword, setShowDbPassword] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showEncryptionKey, setShowEncryptionKey] = useState(false);
 
     useEffect(() => {
         fetchSettings();
@@ -47,11 +49,19 @@ export default function Settings() {
 
                 // Parse schedule for UI
                 if (res.data.backup_schedule && res.data.backup_schedule.startsWith('interval:')) {
-                    setScheduleType('interval');
                     const mins = parseInt(res.data.backup_schedule.split(':')[1]);
-                    setIntervalHours(Math.round(mins / 60));
+                    if (mins % 60 === 0) {
+                        setIntervalValue(mins / 60);
+                        setIntervalUnit('hours');
+                    } else {
+                        setIntervalValue(mins);
+                        setIntervalUnit('minutes');
+                    }
                 } else {
-                    setScheduleType('cron');
+                    // Default to 1 hour if it was cron or something else
+                    setIntervalValue(1);
+                    setIntervalUnit('hours');
+                    setSettings(prev => ({ ...prev, backup_schedule: 'interval:60' }));
                 }
             }
         } catch (error) {
@@ -66,17 +76,11 @@ export default function Settings() {
         setSettings(prev => ({ ...prev, [name]: type === 'checkbox' ? (checked ? 'true' : 'false') : value }));
     };
 
-    const handleScheduleChange = (type, value) => {
-        setScheduleType(type);
-        if (type === 'interval') {
-            setIntervalHours(value);
-            setSettings(prev => ({ ...prev, backup_schedule: `interval:${value * 60}` }));
-        } else {
-            // If switching to cron, keep existing or default
-            if (settings.backup_schedule.startsWith('interval:')) {
-                setSettings(prev => ({ ...prev, backup_schedule: '0 0 * * *' }));
-            }
-        }
+    const updateSchedule = (value, unit) => {
+        const mins = unit === 'hours' ? value * 60 : value;
+        setIntervalValue(value);
+        setIntervalUnit(unit);
+        setSettings(prev => ({ ...prev, backup_schedule: `interval:${mins}` }));
     };
 
     const checkForUpdates = async () => {
@@ -123,6 +127,7 @@ export default function Settings() {
         try {
             await axios.post('/api/settings', settings);
             alert(t('save_settings') + ' OK!');
+            navigate('/');
         } catch (error) {
             alert('Failed to save settings: ' + error.response?.data?.message);
         }
@@ -149,18 +154,31 @@ export default function Settings() {
                     <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>{t('n8n_settings')}</h3>
 
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('n8n_container')}</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('n8n_container_name') || 'n8n Container Name'}</label>
                         <input
                             type="text"
                             name="n8n_container_name"
                             value={settings.n8n_container_name}
                             onChange={handleChange}
                         />
-                        <small style={{ color: 'var(--text-secondary)' }}>The name of your Database docker container (e.g., postgres-1).</small>
+                        <small style={{ color: 'var(--text-secondary)' }}>The name of your n8n docker container (e.g., n8n).</small>
                     </div>
 
+                    {settings.db_type === 'postgres' && (
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('db_container')}</label>
+                            <input
+                                type="text"
+                                name="db_container_name"
+                                value={settings.db_container_name}
+                                onChange={handleChange}
+                            />
+                            <small style={{ color: 'var(--text-secondary)' }}>The name of your Database docker container (e.g., postgres-1).</small>
+                        </div>
+                    )}
+
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Title</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('db_type')}</label>
                         <select name="db_type" value={settings.db_type} onChange={handleChange}>
                             <option value="sqlite">SQLite</option>
                             <option value="postgres">PostgreSQL</option>
@@ -169,56 +187,59 @@ export default function Settings() {
 
                     {settings.db_type === 'sqlite' ? (
                         <div style={{ marginBottom: '1.5rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Database Path (Inside Container)</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('db_path')}</label>
                             <input
                                 type="text"
                                 name="db_path"
                                 value={settings.db_path}
                                 onChange={handleChange}
                             />
+                            <small style={{ color: 'var(--text-secondary)' }}>Path inside n8n container (e.g., /home/node/.n8n/database.sqlite).</small>
                         </div>
                     ) : (
                         <>
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Database User</label>
-                                <input
-                                    type="text"
-                                    name="db_user"
-                                    value={settings.db_user}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Database Password</label>
-                                <div style={{ position: 'relative' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('db_user')}</label>
                                     <input
-                                        type={showDbPassword ? "text" : "password"}
-                                        name="db_password"
-                                        value={settings.db_password}
+                                        type="text"
+                                        name="db_user"
+                                        value={settings.db_user}
                                         onChange={handleChange}
-                                        style={{ paddingRight: '40px' }}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowDbPassword(!showDbPassword)}
-                                        style={{
-                                            position: 'absolute',
-                                            right: '10px',
-                                            top: '50%',
-                                            transform: 'translateY(-50%)',
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            color: 'var(--text-secondary)',
-                                            padding: 0
-                                        }}
-                                    >
-                                        {showDbPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                                    </button>
+                                </div>
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('db_password')}</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            type={showDbPassword ? "text" : "password"}
+                                            name="db_password"
+                                            value={settings.db_password}
+                                            onChange={handleChange}
+                                            style={{ paddingRight: '2.5rem' }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDbPassword(!showDbPassword)}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '0.5rem',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                background: 'none',
+                                                border: 'none',
+                                                color: 'var(--text-secondary)',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            {showDbPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
+
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Database Name</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('db_name')}</label>
                                 <input
                                     type="text"
                                     name="db_name"
@@ -232,50 +253,27 @@ export default function Settings() {
                     <h3 style={{ marginBottom: '1.5rem', marginTop: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>{t('backup_settings')}</h3>
 
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Schedule Type</label>
-                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                <input
-                                    type="radio"
-                                    checked={scheduleType === 'interval'}
-                                    onChange={() => handleScheduleChange('interval', intervalHours)}
-                                />
-                                Every X Hours
-                            </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                <input
-                                    type="radio"
-                                    checked={scheduleType === 'cron'}
-                                    onChange={() => handleScheduleChange('cron')}
-                                />
-                                Custom Cron Expression
-                            </label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('backup_settings')}</label>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <input
+                                type="number"
+                                min="1"
+                                value={intervalValue}
+                                onChange={(e) => updateSchedule(parseInt(e.target.value) || 1, intervalUnit)}
+                                style={{ width: '100px' }}
+                            />
+                            <select
+                                value={intervalUnit}
+                                onChange={(e) => updateSchedule(intervalValue, e.target.value)}
+                                style={{ width: '150px' }}
+                            >
+                                <option value="hours">{t('hours')}</option>
+                                <option value="minutes">{t('minutes')}</option>
+                            </select>
                         </div>
-
-                        {scheduleType === 'interval' ? (
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Interval (Hours)</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={intervalHours}
-                                    onChange={(e) => handleScheduleChange('interval', parseInt(e.target.value) || 1)}
-                                />
-                                <small style={{ color: 'var(--text-secondary)' }}>Backup will run every {intervalHours} hours.</small>
-                            </div>
-                        ) : (
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Cron Expression</label>
-                                <input
-                                    type="text"
-                                    name="backup_schedule"
-                                    value={settings.backup_schedule}
-                                    onChange={handleChange}
-                                    placeholder="0 0 * * *"
-                                />
-                                <small style={{ color: 'var(--text-secondary)' }}>Standard cron expression (e.g., '0 0 * * *' for daily at midnight).</small>
-                            </div>
-                        )}
+                        <small style={{ color: 'var(--text-secondary)' }}>
+                            {t('schedule_type_hours')}: {intervalValue} {intervalUnit === 'hours' ? t('hours').toLowerCase() : t('minutes').toLowerCase()}.
+                        </small>
                     </div>
 
                     <div style={{ marginBottom: '1.5rem' }}>
@@ -288,6 +286,68 @@ export default function Settings() {
                         />
                         <small style={{ color: 'var(--text-secondary)' }}>{t('retention_help')}</small>
                     </div>
+
+                    <h3 style={{ marginBottom: '1.5rem', marginTop: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Backup Optimization</h3>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <label className="checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                            <input
+                                type="checkbox"
+                                name="backup_compression"
+                                checked={settings.backup_compression === 'true'}
+                                onChange={handleChange}
+                                style={{ width: '16px', height: '16px' }}
+                            />
+                            <span>Compress Backups (Gzip)</span>
+                        </label>
+                        <small style={{ color: 'var(--text-secondary)', display: 'block', marginTop: '0.25rem' }}>Reduces storage space but takes longer to backup/restore.</small>
+                    </div>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <label className="checkbox-container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                            <input
+                                type="checkbox"
+                                name="backup_encryption"
+                                checked={settings.backup_encryption === 'true'}
+                                onChange={handleChange}
+                                style={{ width: '16px', height: '16px' }}
+                            />
+                            <span>Encrypt Backups (AES-256)</span>
+                        </label>
+                        <small style={{ color: 'var(--text-secondary)', display: 'block', marginTop: '0.25rem' }}>Protects your data with a password. <strong>Do not lose your key!</strong></small>
+                    </div>
+
+                    {settings.backup_encryption === 'true' && (
+                        <div style={{ marginBottom: '1.5rem', paddingLeft: '1.5rem', borderLeft: '2px solid var(--border)' }}>
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type={showEncryptionKey ? "text" : "password"}
+                                    name="backup_encryption_key"
+                                    value={settings.backup_encryption_key || ''}
+                                    onChange={handleChange}
+                                    placeholder="Enter a strong password"
+                                    style={{ paddingRight: '40px' }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEncryptionKey(!showEncryptionKey)}
+                                    style={{
+                                        position: 'absolute',
+                                        right: '10px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        color: 'var(--text-secondary)',
+                                        padding: 0
+                                    }}
+                                >
+                                    {showEncryptionKey ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <h3 style={{ marginBottom: '1.5rem', marginTop: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>{t('cloud_settings')}</h3>
 
@@ -311,68 +371,122 @@ export default function Settings() {
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Storage Provider</label>
                                 <select
                                     style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-                                    value="s3"
-                                    onChange={() => alert(t('s3_provider_warning'))}
+                                    name="cloud_provider"
+                                    value={settings.cloud_provider || 's3'}
+                                    onChange={handleChange}
                                 >
                                     <option value="s3">S3 Compatible (MinIO, AWS, DigitalOcean)</option>
-                                    <option value="gdrive" disabled>Google Drive (Coming Soon)</option>
-                                    <option value="onedrive" disabled>Microsoft OneDrive (Coming Soon)</option>
-                                    <option value="dropbox" disabled>Dropbox (Coming Soon)</option>
+                                    <option value="gdrive">Google Drive</option>
+                                    <option value="onedrive">Microsoft OneDrive</option>
                                 </select>
                             </div>
 
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('endpoint')}</label>
-                                <input
-                                    type="text"
-                                    name="aws_s3_endpoint"
-                                    value={settings.aws_s3_endpoint || ''}
-                                    onChange={handleChange}
-                                    placeholder="https://s3.amazonaws.com"
-                                />
-                                <small style={{ color: 'var(--text-secondary)' }}>Leave empty for AWS. Required for MinIO, DigitalOcean Spaces, etc.</small>
-                            </div>
+                            {(!settings.cloud_provider || settings.cloud_provider === 's3') && (
+                                <>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('endpoint')}</label>
+                                        <input
+                                            type="text"
+                                            name="aws_s3_endpoint"
+                                            value={settings.aws_s3_endpoint || ''}
+                                            onChange={handleChange}
+                                            placeholder="https://s3.amazonaws.com"
+                                        />
+                                        <small style={{ color: 'var(--text-secondary)' }}>Leave empty for AWS. Required for MinIO, DigitalOcean Spaces, etc.</small>
+                                    </div>
 
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('region')}</label>
-                                <input
-                                    type="text"
-                                    name="aws_s3_region"
-                                    value={settings.aws_s3_region || ''}
-                                    onChange={handleChange}
-                                    placeholder="us-east-1"
-                                />
-                            </div>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('region')}</label>
+                                        <input
+                                            type="text"
+                                            name="aws_s3_region"
+                                            value={settings.aws_s3_region || ''}
+                                            onChange={handleChange}
+                                            placeholder="us-east-1"
+                                        />
+                                    </div>
 
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('bucket')}</label>
-                                <input
-                                    type="text"
-                                    name="aws_s3_bucket"
-                                    value={settings.aws_s3_bucket || ''}
-                                    onChange={handleChange}
-                                />
-                            </div>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('bucket')}</label>
+                                        <input
+                                            type="text"
+                                            name="aws_s3_bucket"
+                                            value={settings.aws_s3_bucket || ''}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
 
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('access_key')}</label>
-                                <input
-                                    type="text"
-                                    name="aws_s3_access_key"
-                                    value={settings.aws_s3_access_key || ''}
-                                    onChange={handleChange}
-                                />
-                            </div>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('access_key')}</label>
+                                        <input
+                                            type="text"
+                                            name="aws_s3_access_key"
+                                            value={settings.aws_s3_access_key || ''}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
 
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('secret_key')}</label>
-                                <input
-                                    type="password"
-                                    name="aws_s3_secret_key"
-                                    value={settings.aws_s3_secret_key || ''}
-                                    onChange={handleChange}
-                                />
-                            </div>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('secret_key')}</label>
+                                        <input
+                                            type="password"
+                                            name="aws_s3_secret_key"
+                                            value={settings.aws_s3_secret_key || ''}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            {settings.cloud_provider === 'gdrive' && (
+                                <>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Service Account Credentials (JSON)</label>
+                                        <textarea
+                                            rows="5"
+                                            name="google_drive_credentials"
+                                            value={settings.google_drive_credentials || ''}
+                                            onChange={handleChange}
+                                            placeholder='{"type": "service_account", ...}'
+                                            style={{ width: '100%', fontFamily: 'monospace' }}
+                                        />
+                                        <small style={{ color: 'var(--text-secondary)' }}>
+                                            Paste Service Account JSON <strong>OR</strong> OAuth2 JSON (for Personal Accounts).<br />
+                                            OAuth2 Format: <code>{`{"client_id": "...", "client_secret": "...", "refresh_token": "..."}`}</code>
+                                        </small>
+                                    </div>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Folder ID (Optional)</label>
+                                        <input
+                                            type="text"
+                                            name="google_drive_folder_id"
+                                            value={settings.google_drive_folder_id || ''}
+                                            onChange={handleChange}
+                                            placeholder="1B2M3..."
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            {settings.cloud_provider === 'onedrive' && (
+                                <>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Credentials / Refresh Token</label>
+                                        <textarea
+                                            rows={5}
+                                            name="onedrive_refresh_token"
+                                            value={settings.onedrive_refresh_token || ''}
+                                            onChange={handleChange}
+                                            placeholder='{"client_id": "...", "client_secret": "...", "refresh_token": "..."}'
+                                            style={{ width: '100%', fontFamily: 'monospace' }}
+                                        />
+                                        <small style={{ color: 'var(--text-secondary)' }}>
+                                            Paste Refresh Token <strong>OR</strong> OAuth2 JSON (for Personal Accounts).<br />
+                                            OAuth2 Format: <code>{`{"client_id": "...", "client_secret": "...", "refresh_token": "..."}`}</code>
+                                        </small>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
 

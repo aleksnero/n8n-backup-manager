@@ -8,9 +8,10 @@ export default function Dashboard() {
     const [backups, setBackups] = useState([]);
     const [settings, setSettings] = useState({});
     const [loading, setLoading] = useState(true);
+    const [news, setNews] = useState(null);
     const [nextBackup, setNextBackup] = useState(null);
     const [countdown, setCountdown] = useState('');
-    const [status, setStatus] = useState({ n8n: false, database: false });
+    const [status, setStatus] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -49,6 +50,17 @@ export default function Dashboard() {
             setBackups(backupsRes.data);
             setSettings(settingsRes.data);
             calculateNextBackup(settingsRes.data.backup_schedule);
+
+            // Fetch News (Update Info)
+            try {
+                const updateRes = await axios.post('/api/settings/update/check');
+                if (updateRes.data) {
+                    setNews(updateRes.data);
+                }
+            } catch (ignore) {
+                // Silently fail for news if offline or rate limited
+            }
+
         } catch (error) {
             console.error('Failed to fetch data', error);
         } finally {
@@ -156,36 +168,65 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Connection Status */}
-            <div className="card" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
-                <h3 style={{ marginBottom: '1.5rem' }}>{t('connection_status')}</h3>
-                <div style={{ display: 'flex', gap: '3rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{
-                            width: '16px',
-                            height: '16px',
-                            borderRadius: '50%',
-                            backgroundColor: status.n8n ? 'var(--success)' : 'var(--error)',
-                            boxShadow: status.n8n ? '0 0 12px var(--success)' : '0 0 12px var(--error)',
-                            transition: 'all 0.3s ease'
-                        }}></div>
-                        <span style={{ fontSize: '1.1rem' }}>{t('n8n_container')}: <strong>{status.n8n ? t('connected') : t('disconnected')}</strong></span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{
-                            width: '16px',
-                            height: '16px',
-                            borderRadius: '50%',
-                            backgroundColor: status.database ? 'var(--success)' : 'var(--error)',
-                            boxShadow: status.database ? '0 0 12px var(--success)' : '0 0 12px var(--error)',
-                            transition: 'all 0.3s ease'
-                        }}></div>
-                        <span style={{ fontSize: '1.1rem' }}>{t('database')}: <strong>{status.database ? t('connected') : t('disconnected')}</strong></span>
+            {status && (
+                <div className="card" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
+                    <h3 style={{ marginBottom: '1.5rem' }}>{t('connection_status')}</h3>
+                    <div style={{ display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{
+                                width: '16px',
+                                height: '16px',
+                                borderRadius: '50%',
+                                backgroundColor: status.n8n ? 'var(--success)' : 'var(--error)',
+                                boxShadow: status.n8n ? '0 0 12px var(--success)' : '0 0 12px var(--error)',
+                                transition: 'all 0.3s ease'
+                            }}></div>
+                            <span style={{ fontSize: '1.1rem' }}>{t('n8n_container')}: <strong>{status.n8n ? t('connected') : t('disconnected')}</strong></span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{
+                                width: '16px',
+                                height: '16px',
+                                borderRadius: '50%',
+                                backgroundColor: status.database ? 'var(--success)' : 'var(--error)',
+                                boxShadow: status.database ? '0 0 12px var(--success)' : '0 0 12px var(--error)',
+                                transition: 'all 0.3s ease'
+                            }}></div>
+                            <span style={{ fontSize: '1.1rem' }}>{t('database')}: <strong>{status.database ? t('connected') : t('disconnected')}</strong></span>
+                        </div>
+                        {status.gdrive !== undefined && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    borderRadius: '50%',
+                                    backgroundColor: status.gdrive ? '#4285F4' : 'var(--text-secondary)',
+                                    boxShadow: status.gdrive ? '0 0 12px #4285F4' : 'none',
+                                    transition: 'all 0.3s ease',
+                                    opacity: status.gdrive ? 1 : 0.3
+                                }}></div>
+                                <span style={{ fontSize: '1.1rem' }}>Google Drive: <strong>{status.gdrive ? t('configured') : t('not_configured')}</strong></span>
+                            </div>
+                        )}
+                        {status.onedrive !== undefined && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    borderRadius: '50%',
+                                    backgroundColor: status.onedrive ? '#0078D4' : 'var(--text-secondary)',
+                                    boxShadow: status.onedrive ? '0 0 12px #0078D4' : 'none',
+                                    transition: 'all 0.3s ease',
+                                    opacity: status.onedrive ? 1 : 0.3
+                                }}></div>
+                                <span style={{ fontSize: '1.1rem' }}>OneDrive: <strong>{status.onedrive ? t('configured') : t('not_configured')}</strong></span>
+                            </div>
+                        )}
                     </div>
                 </div>
-            </div>
+            )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 <div className="card">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                         <Clock size={24} color="var(--accent)" />
@@ -215,6 +256,23 @@ export default function Dashboard() {
                     </div>
                     <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{backups.length}</p>
                 </div>
+
+                {/* News Widget */}
+                <div className="card" style={{ gridColumn: '1 / -1', background: 'var(--bg-secondary)', border: '1px dashed var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '1.2rem' }}>📢</span>
+                        <h3 style={{ margin: 0 }}>Latest News</h3>
+                    </div>
+                    {news ? (
+                        <div>
+                            <p><strong>v{news.remoteVersion}</strong> - {new Date(news.releaseDate || Date.now()).toLocaleDateString()}</p>
+                            <p>{news.releaseNotes || 'No release notes available.'}</p>
+                            {news.hasUpdate && <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>New update available! Check Updates page.</span>}
+                        </div>
+                    ) : (
+                        <p style={{ color: 'var(--text-secondary)' }}>Loading news...</p>
+                    )}
+                </div>
             </div>
 
             <div className="card">
@@ -230,6 +288,6 @@ export default function Dashboard() {
                     </label>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

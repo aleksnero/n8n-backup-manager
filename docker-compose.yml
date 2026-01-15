@@ -1,17 +1,17 @@
-version: '3.8'
 services:
   backup-manager:
     build: .
     container_name: n8n-backup-manager
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./backups:/app/backups
       - ./data:/app/data
     environment:
-      - JWT_SECRET=change_this_secret
+      - PORT=${PORT:-3000}
+      - JWT_SECRET=${JWT_SECRET:-change_this_secret}
     networks:
       - default
       - npm_public

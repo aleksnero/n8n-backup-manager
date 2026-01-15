@@ -6,7 +6,7 @@
 
 [![From Ukraine with Love](https://img.shields.io/badge/From%20Ukraine-with%20Love!-%230057B8?style=for-the-badge&logo=ukraine&labelColor=%23FFD700)](https://stand-with-ukraine.pp.ua)
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![Docker](https://img.shields.io/badge/docker-required-blue.svg)
@@ -23,15 +23,18 @@
 
 - ✅ **Automatic Backup** of n8n workflows and database
 - ✅ **PostgreSQL & SQLite Support**
+- ✅ **Backup Compression** (Gzip)
+- ✅ **Backup Encryption** (AES-256)
+- ✅ **Cloud Backups** (S3, Google Drive, OneDrive)
 - ✅ **Flexible Scheduling** (cron or intervals)
 - ✅ **Backup Retention Policy** (auto-delete old backups)
-- ✅ **Cloud Backups** (S3 Support included)
 - ✅ **One-Click Backup & Restore**
 - ✅ **Protected Backups** (prevent auto-deletion)
 - ✅ **Web Interface** for management
 - ✅ **Automatic Update System** from GitHub
 - ✅ **Rollback** capability
 - ✅ **Connection Status Monitoring**
+- ✅ **Password Management**
 - ✅ **Detailed Logging**
 
 ## 📸 Screenshots
@@ -98,13 +101,11 @@ git clone https://github.com/aleksnero/n8n-backup-manager.git
 cd n8n-backup-manager
 ```
 
-#### 2. Environment Variables
-
-Create a `.env` file:
+Create a `.env` file (see `.env.example`):
 
 ```env
+PORT=3000
 JWT_SECRET=your_secret_key_here
-UPDATE_SERVER_URL=https://raw.githubusercontent.com/aleksnero/n8n-backup-manager/main/version.json
 ```
 
 #### 3. Run
@@ -120,7 +121,8 @@ docker-compose up -d --build
 Go to **Settings** and configure:
 
 **For Docker:**
-- **Database Container Name**: DB container name (e.g., `postgres-1`)
+- **n8n Container Name**: Name of your n8n container
+- **Database Container Name**: Name of your DB container (e.g., `postgres-1`)
 - **Database Type**: PostgreSQL or SQLite
 
 **For PostgreSQL:**
@@ -131,9 +133,22 @@ Go to **Settings** and configure:
 **For SQLite:**
 - **Database Path**: path to DB file (e.g., `/home/node/.n8n/database.sqlite`)
 
+**Backup Optimization:**
+- **Compression**: Enable Gzip compression to save space
+- **Encryption**: Secure your backups with AES-256 (Password required)
+
+**Cloud Configuration:**
+- **Provider**: S3 Compatible, Google Drive, or Microsoft OneDrive
+- **S3**: Configure endpoint, region, bucket, and keys
+- **Google Drive**: Use Service Account JSON or OAuth2 credentials
+- **OneDrive**: Use Refresh Token or OAuth2 credentials
+
+> [!TIP]
+> **[View Detailed Cloud Setup Guide](CLOUD_SETUP.md)** for step-by-step instructions on Google Drive and OneDrive configuration.
+
 **Scheduling:**
-- **Backup Schedule**: select interval (1, 6, 12, 24 hours) or cron expression
-- **Protected Backups Count**: number of backups to keep from deletion
+- **Backup Schedule**: select interval (hours/minutes) or cron expression
+- **Max Backups to Keep**: number of recent backups to keep before auto-deletion (excluding protected ones)
 
 ### Creating Backups
 
@@ -191,27 +206,29 @@ If issues occur after update:
 Example `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
+```yaml
 services:
   backup-manager:
     build: .
     container_name: n8n-backup-manager
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./backups:/app/backups
       - ./data:/app/data
     environment:
-      - JWT_SECRET=your_secret_here
-      - UPDATE_SERVER_URL=https://raw.githubusercontent.com/aleksnero/n8n-backup-manager/main/version.json
+      - PORT=${PORT:-3000}
+      - JWT_SECRET=${JWT_SECRET:-change_this_secret}
     networks:
-      - nginx_proxy_manager_default
+      - default
+      - npm_public
 
 networks:
-  nginx_proxy_manager_default:
+  npm_public:
     external: true
+    name: nginx_proxy_manager_default
 ```
 
 ## 🔧 Configuration

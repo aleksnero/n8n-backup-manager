@@ -21,6 +21,11 @@ const Backup = sequelize.define('Backup', {
     isProtected: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
+    },
+    storageLocation: {
+        type: DataTypes.STRING,
+        defaultValue: 'local',
+        allowNull: false
     }
 });
 

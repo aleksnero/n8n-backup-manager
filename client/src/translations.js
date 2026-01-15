@@ -22,6 +22,7 @@ export const translations = {
         // Dashboard
         connection_status: 'Connection Status',
         n8n_container: 'n8n Container',
+        n8n_container_name: 'n8n Container Name',
         database: 'Database',
         connected: 'Connected',
         disconnected: 'Disconnected',
@@ -64,8 +65,16 @@ export const translations = {
         confirm_update: 'Apply update? Server will restart.',
         confirm_rollback: 'Rollback to previous version? Server will restart.',
         update_success: 'Update applied! Server restarting...',
-        rollback_success: 'Rollback executed! Server restarting...',
-        update_error: 'Failed to specific update: ',
+        rollback_success: 'Rollback successful. Restarting...',
+        confirm_rollback_version: 'Are you sure you want to rollback to this version? The application will restart.',
+        upload_update: 'Upload Update',
+        download_update: 'Download Update',
+        update_error: 'Failed to apply update: ',
+        upload_success: 'Upload successful',
+        upload_failed: 'Upload failed: ',
+        no_backups_found: 'No local update backups found.',
+        confirm_delete_backup: 'Delete this backup?',
+        latest: 'Latest',
 
         // Settings
         settings_title: 'Settings',
@@ -95,6 +104,18 @@ export const translations = {
         backup_retention_count: 'Max Backups to Keep',
         retention_help: 'Number of most recent backups to keep. Older backups (not including manually protected ones) will be deleted.',
         s3_provider_warning: 'Only S3 Compatible storage is currently supported. Google Drive and OneDrive integration is coming soon!',
+        hours: 'Hours',
+        minutes: 'Minutes',
+        interval_type: 'Interval Type',
+        schedule_type_hours: 'Every X Amount',
+        db_container: 'Database Container',
+        db_type: 'Database Type',
+        configured: 'Configured',
+        not_configured: 'Not configured',
+        db_path: 'Database Path',
+        db_user: 'Database User',
+        db_password: 'Database Password',
+        db_name: 'Database Name',
     },
     uk: {
         // Sidebar & Layout
@@ -119,6 +140,7 @@ export const translations = {
         // Dashboard
         connection_status: 'Статус з\'єднання',
         n8n_container: 'Контейнер n8n',
+        n8n_container_name: 'Назва контейнера n8n',
         database: 'База даних',
         connected: 'Підключено',
         disconnected: 'Відключено',
@@ -163,6 +185,11 @@ export const translations = {
         update_success: 'Оновлення застосовано! Сервер перезапускається...',
         rollback_success: 'Rollback виконано! Сервер перезапускається...',
         update_error: 'Не вдалося оновити: ',
+        upload_success: 'Завантаження успішне',
+        upload_failed: 'Помилка завантаження: ',
+        no_backups_found: 'Локальних резервних копій оновлень не знайдено.',
+        confirm_delete_backup: 'Видалити цю резервну копію?',
+        latest: 'Остання',
 
         // Settings
         settings_title: 'Налаштування',
@@ -192,5 +219,17 @@ export const translations = {
         backup_retention_count: 'Зберігати бекапів',
         retention_help: 'Кількість останніх бекапів для збереження. Старіші бекапи (крім захищених) будуть видалені.',
         s3_provider_warning: 'Наразі підтримується тільки S3-сумісне сховище. Інтеграція Google Drive та OneDrive скоро з\'яться!',
+        hours: 'Годин',
+        minutes: 'Хвилин',
+        interval_type: 'Тип інтервалу',
+        schedule_type_hours: 'Кожні X одиниць',
+        db_container: 'Контейнер бази даних',
+        db_type: 'Тип бази даних',
+        configured: 'Налаштовано',
+        not_configured: 'Не налаштовано',
+        db_path: 'Шлях до БД',
+        db_user: 'Користувач БД',
+        db_password: 'Пароль БД',
+        db_name: 'Назва БД',
     }
 };

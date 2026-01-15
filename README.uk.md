@@ -4,7 +4,7 @@
 
 ![n8n Backup Manager](screenshots/banner.png)
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![Docker](https://img.shields.io/badge/docker-required-blue.svg)
@@ -21,15 +21,18 @@
 
 - ✅ **Автоматичне резервне копіювання** n8n та бази даних
 - ✅ **Підтримка PostgreSQL та SQLite**
+- ✅ **Стиснення бекапів** (Gzip)
+- ✅ **Шифрування бекапів** (AES-256)
+- ✅ **Хмарні бекапи** (S3, Google Drive, OneDrive)
 - ✅ **Гнучке планування** бекапів (cron або інтервали)
 - ✅ **Політика зберігання** (авто-видалення старих)
-- ✅ **Хмарні бекапи** (підтримка S3)
 - ✅ **Завантаження та відновлення** бекапів одним кліком
 - ✅ **Захист важливих бекапів** від автоматичного видалення
 - ✅ **Веб-інтерфейс** для управління
 - ✅ **Система автоматичного оновлення** з GitHub
 - ✅ **Rollback** до попередніх версій
 - ✅ **Моніторинг статусу** підключення
+- ✅ **Управління паролем**
 - ✅ **Детальне логування** всіх операцій
 
 ## 📸 Скріншоти
@@ -96,13 +99,11 @@ git clone https://github.com/aleksnero/n8n-backup-manager.git
 cd n8n-backup-manager
 ```
 
-#### 2. Налаштування змінних середовища
-
-Створіть файл `.env`:
+Створіть файл `.env` (див. `.env.example`):
 
 ```env
+PORT=3000
 JWT_SECRET=your_secret_key_here
-UPDATE_SERVER_URL=https://raw.githubusercontent.com/aleksnero/n8n-backup-manager/main/version.json
 ```
 
 #### 3. Запуск
@@ -118,6 +119,7 @@ docker-compose up -d --build
 Перейдіть у розділ **Settings** та вкажіть:
 
 **Для Docker:**
+- **n8n Container Name**: назва контейнера з n8n
 - **Database Container Name**: назва контейнера з БД (наприклад, `postgres-1`)
 - **Database Type**: PostgreSQL або SQLite
 
@@ -129,9 +131,22 @@ docker-compose up -d --build
 **Для SQLite:**
 - **Database Path**: шлях до файлу БД (наприклад, `/home/node/.n8n/database.sqlite`)
 
+**Оптимізація бекапів:**
+- **Стиснення (Gzip)**: зменшує розмір файлів
+- **Шифрування (AES-256)**: захист даних паролем
+
+**Хмарні налаштування:**
+- **Провайдер**: S3, Google Drive або Microsoft OneDrive
+- **S3**: налаштування ендпоінту, регіону, бакету та ключів
+- **Google Drive**: використання JSON сервісного акаунту або OAuth2
+- **OneDrive**: використання Refresh Token або OAuth2
+
+> [!TIP]
+> **[Переглянути детальну інструкцію з налаштування хмари](CLOUD_SETUP.uk.md)** для отримання покрокових вказівок щодо Google Drive та OneDrive.
+
 **Планування:**
-- **Backup Schedule**: виберіть інтервал (1, 6, 12, 24 години) або cron вираз
-- **Protected Backups Count**: кількість бекапів для захисту від видалення
+- **Backup Schedule**: інтервал (години/хвилини) або cron вираз
+- **Max Backups to Keep**: кількість останніх бекапів для зберігання (крім захищених)
 
 ### Створення бекапу
 
@@ -193,27 +208,29 @@ Backup Manager підтримує автоматичне оновлення з G
 Приклад `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
+```yaml
 services:
   backup-manager:
     build: .
     container_name: n8n-backup-manager
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./backups:/app/backups
       - ./data:/app/data
     environment:
-      - JWT_SECRET=your_secret_here
-      - UPDATE_SERVER_URL=https://raw.githubusercontent.com/aleksnero/n8n-backup-manager/main/version.json
+      - PORT=${PORT:-3000}
+      - JWT_SECRET=${JWT_SECRET:-change_this_secret}
     networks:
-      - nginx_proxy_manager_default
+      - default
+      - npm_public
 
 networks:
-  nginx_proxy_manager_default:
+  npm_public:
     external: true
+    name: nginx_proxy_manager_default
 ```
 
 ## 🔧 Налаштування
