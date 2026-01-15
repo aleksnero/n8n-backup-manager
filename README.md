@@ -65,6 +65,7 @@
 - n8n running in a Docker container
 - PostgreSQL or SQLite database
 - Minimum 1GB free space for backups
+- Docker network for nginx proxy manager (create with `docker network create nginx_proxy_manager_default` if not using Nginx Proxy Manager)
 
 ## 🛠️ Installation
 
@@ -103,10 +104,16 @@ cd n8n-backup-manager
 
 #### 2. Environment Variables
 
-Create a `.env` file:
+Create a `.env` file (see `.env.example`):
 
 ```env
+# Port to access the application (optional, defaults to 3000)
+PORT=3000
+
+# JWT secret (required for production)
 JWT_SECRET=your_secret_key_here
+
+# Update server URL (optional)
 UPDATE_SERVER_URL=https://raw.githubusercontent.com/aleksnero/n8n-backup-manager/main/version.json
 ```
 
@@ -208,21 +215,20 @@ If issues occur after update:
 Example `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
 services:
   backup-manager:
     build: .
     container_name: n8n-backup-manager
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./backups:/app/backups
       - ./data:/app/data
     environment:
-      - JWT_SECRET=your_secret_here
-      - UPDATE_SERVER_URL=https://raw.githubusercontent.com/aleksnero/n8n-backup-manager/main/version.json
+      - PORT=${PORT:-3000}
+      - JWT_SECRET=${JWT_SECRET:-change_this_secret}
     networks:
       - nginx_proxy_manager_default
 
@@ -231,15 +237,17 @@ networks:
     external: true
 ```
 
+> **Note:** Set `PORT` in your `.env` file to change the default port (3000).
+
 ## 🔧 Configuration
 
 ### Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
+| `PORT` | Port to access the application | `3000` |
 | `JWT_SECRET` | Secret key for JWT | `secret-key` |
 | `UPDATE_SERVER_URL` | URL for update checks | GitHub URL |
-| `PORT` | Server port | `3000` |
 
 ### Volumes
 
