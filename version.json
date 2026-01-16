@@ -1,7 +1,7 @@
 {
-    "version": "1.3.1",
-    "releaseDate": "2026-01-03T12:00:00Z",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.3.1/deploy.zip",
+    "version": "1.3.2",
+    "releaseDate": "2026-01-16T20:00:00Z",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.3.2/deploy.zip",
     "releaseNotes": "Security and Localization update: Fixed Auth Middleware, validated download URLs, and added full Ukrainian localization for updates.",
     "minVersion": "1.2.0",
     "changelog": [

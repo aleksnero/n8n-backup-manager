@@ -11,7 +11,8 @@ require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
-const VERSION = '1.3.0';
+const packageJson = require('./package.json');
+const VERSION = packageJson.version;
 
 app.use(cors());
 app.use(express.json());

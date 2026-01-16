@@ -178,6 +178,7 @@ class UpdateService {
             // On Windows, files might be locked. Extraction might fail partially.
             // We'll catch and log specifically.
             try {
+                updateZip.extractAllTo(rootDir, true);
                 console.log('Update extracted successfully.');
 
                 // 2.5 Install new dependencies if they exist

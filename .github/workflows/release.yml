@@ -57,18 +57,11 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Update version.json
+      - name: Prepare version.json for release
         run: |
-          cat > version.json << EOF
-          {
-            "version": "${{ steps.get_version.outputs.VERSION }}",
-            "releaseDate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "releaseNotes": "Release ${{ steps.get_version.outputs.VERSION }}",
-            "downloadUrl": "https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.VERSION }}/deploy.zip",
-            "minVersion": "1.0.0",
-            "changelog": []
-          }
-          EOF
+          echo "Using version.json from repository"
+          # Optionally update version field if it doesn't match tag, but we'll trust our manual bump
+          # sed -i 's/"version": ".*"/"version": "${{ steps.get_version.outputs.VERSION }}"/' version.json
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1

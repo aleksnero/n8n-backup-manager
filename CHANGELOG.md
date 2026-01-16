@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.2] - 2026-01-16
+### Fixed
+- Updater: Fixed critical bug where the updater didn't actually extract files (the "bricked" updater fix).
+- UI: Fixed version reporting from specialized const instead of package.json.
+- Release: Improved GitHub Actions to preserve detailed release info in version.json.
+
 ## [1.3.1] - 2026-01-16
 ### Fixed
 - Authentication: Fixed critical middleware export bug and protected update routes.
