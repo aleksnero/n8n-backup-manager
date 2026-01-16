@@ -1,12 +1,12 @@
 {
-    "version": "1.3.3",
+    "version": "1.3.4",
     "releaseDate": "2026-01-16T20:00:00Z",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.3.3/deploy.zip",
-    "releaseNotes": "Cloud Storage Fix: Resolved issue where Google Drive uploads were incorrectly attempting S3 validation.",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.3.4/deploy.zip",
+    "releaseNotes": "Critical Updater Fix: Fixed deployment package structure that caused updates to fail in Docker environments.",
     "minVersion": "1.2.0",
     "changelog": [
-        "Fix: Cloud upload logic now correctly handles Google Drive and OneDrive providers",
-        "Fix: Improved log messages for cloud provider selection",
-        "Fix: S3 validation only runs when S3 is the selected provider"
+        "Fix: Deployment package (deploy.zip) now has correct flat structure for Docker",
+        "Fix: Updater now handles both flat and nested zip structures for better resilience",
+        "Fix: Included version.json and CHANGELOG.md directly in the deployment package"
     ]
 }

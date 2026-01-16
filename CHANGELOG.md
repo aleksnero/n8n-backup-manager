@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.4] - 2026-01-17
+### Fixed
+- **Critical:** Fixed deployment package structure that caused updates to fail in Docker (removed the accidental `server/` prefix in the zip).
+- Updater: Improved extraction logic to be more resilient (handles both flat and nested structures).
+- Versioning: Included `version.json` and `CHANGELOG.md` directly in the update zip.
+
 ## [1.3.3] - 2026-01-17
 ### Fixed
 - Cloud Storage: Fixed upload logic to correctly handle Google Drive and OneDrive providers without requiring S3 credentials.

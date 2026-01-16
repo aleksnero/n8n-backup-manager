@@ -44,12 +44,12 @@ jobs:
       - name: Create release archive
         run: |
           mkdir -p release
-          cp -r server release/
-          cp -r backups release/ || true
-          cp docker-compose.yml release/
-          cp Dockerfile release/
-          cp README.md release/
-          cp CHANGELOG.md release/
+          cp -r server/. release/
+          cp version.json release/ || true
+          cp CHANGELOG.md release/ || true
+          cp README.md release/ || true
+          # Remove any potential node_modules from the zip for smaller size (server has its own npm install step in Docker anyway)
+          # rm -rf release/node_modules
           cd release
           zip -r ../deploy.zip .
 

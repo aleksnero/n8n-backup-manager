@@ -174,11 +174,35 @@ class UpdateService {
 
             // 2. Extract new files
             const updateZip = new AdmZip(zipFilePath);
+            const entries = updateZip.getEntries();
+            const hasServerFolder = entries.some(e => e.entryName.startsWith('server/'));
 
-            // On Windows, files might be locked. Extraction might fail partially.
-            // We'll catch and log specifically.
+            // In Docker, package.json is in rootDir (/app)
+            const isFlatEnv = fs.existsSync(path.join(rootDir, 'package.json'));
+
             try {
-                updateZip.extractAllTo(rootDir, true);
+                if (isFlatEnv && hasServerFolder) {
+                    console.log('Detected flat environment and nested update. Flattening extraction...');
+                    entries.forEach(entry => {
+                        let targetName = entry.entryName;
+                        if (targetName.startsWith('server/')) {
+                            targetName = targetName.substring(7); // Remove 'server/' prefix
+                        }
+                        if (targetName) {
+                            const targetPath = path.join(rootDir, targetName);
+                            if (entry.isDirectory) {
+                                if (!fs.existsSync(targetPath)) fs.mkdirSync(targetPath, { recursive: true });
+                            } else {
+                                const dir = path.dirname(targetPath);
+                                if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                                fs.writeFileSync(targetPath, entry.getData());
+                            }
+                        }
+                    });
+                } else {
+                    updateZip.extractAllTo(rootDir, true);
+                }
+
                 console.log('Update extracted successfully.');
 
                 // 2.5 Install new dependencies if they exist
@@ -191,11 +215,10 @@ class UpdateService {
                     console.log('Dependencies installed successfully.');
                 } catch (installError) {
                     console.error('Failed to install dependencies:', installError);
-                    // We continue even if npm install fails, as it might be a minor issue
                 }
             } catch (extractError) {
-                console.error('Extraction failed. Some files might be in use:', extractError);
-                throw new Error(`Extraction failed: ${extractError.message}. If running on Windows, try stopping the service before updating.`);
+                console.error('Extraction failed:', extractError);
+                throw new Error(`Extraction failed: ${extractError.message}`);
             }
 
             // 3. Clean up
