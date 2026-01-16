@@ -556,7 +556,8 @@ const checkConnectionStatus = async () => {
                 if (credsStr) {
                     const credentials = typeof credsStr === 'string' ? JSON.parse(credsStr) : credsStr;
                     if (credentials.client_email || credentials.client_id) {
-                        status.gdrive = true;
+                        const { testGDriveConnection } = require('./cloud/googleDrive');
+                        status.gdrive = await testGDriveConnection(credentials);
                     }
                 }
             } catch (e) {
@@ -569,7 +570,8 @@ const checkConnectionStatus = async () => {
             try {
                 const refreshToken = await getSetting('onedrive_refresh_token');
                 if (refreshToken && refreshToken.length > 50) {
-                    status.onedrive = true;
+                    const { testOneDriveConnection } = require('./cloud/oneDrive');
+                    status.onedrive = await testOneDriveConnection(refreshToken);
                 }
             } catch (e) {
                 status.onedrive = false;

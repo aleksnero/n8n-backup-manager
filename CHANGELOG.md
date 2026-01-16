@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.5] - 2026-01-17
+### Added
+- **Feature:** Dashboard status now performs real API checks for Google Drive and OneDrive (no more false positives).
+### Fixed
+- Google Drive: Improved error handling for "storageQuotaExceeded" (Service Account limitations).
+- Google Drive: Added support for OAuth2 credentials (client_id, secret, refresh_token) in the same settings field.
+
 ## [1.3.4] - 2026-01-17
 ### Fixed
 - **Critical:** Fixed deployment package structure that caused updates to fail in Docker (removed the accidental `server/` prefix in the zip).

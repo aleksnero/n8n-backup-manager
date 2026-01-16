@@ -1,12 +1,12 @@
 {
-    "version": "1.3.4",
+    "version": "1.3.5",
     "releaseDate": "2026-01-16T20:00:00Z",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.3.4/deploy.zip",
-    "releaseNotes": "Critical Updater Fix: Fixed deployment package structure that caused updates to fail in Docker environments.",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.3.5/deploy.zip",
+    "releaseNotes": "Dashboard & Cloud Improvements: Added real-time connectivity checks for GDrive/OneDrive and improved quota error handling.",
     "minVersion": "1.2.0",
     "changelog": [
-        "Fix: Deployment package (deploy.zip) now has correct flat structure for Docker",
-        "Fix: Updater now handles both flat and nested zip structures for better resilience",
-        "Fix: Included version.json and CHANGELOG.md directly in the deployment package"
+        "Feature: Dashboard status now performs real API checks for Google Drive and OneDrive",
+        "Fix: Improved error message for Google Drive storage quota issues with actionable steps",
+        "Fix: Support for both Service Account and OAuth2 credentials in GDrive settings"
     ]
 }

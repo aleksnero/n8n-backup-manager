@@ -142,4 +142,20 @@ const refreshAccessToken = async (credentials) => {
     return data.access_token;
 };
 
-module.exports = { uploadToOneDrive };
+/**
+ * Test connectivity by making a small metadata request
+ */
+const testOneDriveConnection = async (credentials) => {
+    try {
+        const accessToken = await refreshAccessToken(credentials);
+        const res = await fetch('https://graph.microsoft.com/v1.0/me/drive', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        return res.ok;
+    } catch (e) {
+        console.error('[ONEDRIVE] Connection test failed:', e.message);
+        return false;
+    }
+};
+
+module.exports = { uploadToOneDrive, testOneDriveConnection };

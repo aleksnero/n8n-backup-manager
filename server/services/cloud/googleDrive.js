@@ -56,7 +56,16 @@ const uploadToGoogleDrive = async (filepath, filename, credentials, folderId) =>
 
         if (!uploadRes.ok) {
             const err = await uploadRes.text();
-            throw new Error(`Failed to upload file content to GDrive: ${err}`);
+            let errorMessage = `Failed to upload file content to GDrive: ${err}`;
+
+            if (err.includes('storageQuotaExceeded') || err.includes('Service Accounts do not have storage quota')) {
+                errorMessage = 'Google Drive Error: Service Accounts have 0 quota in personal accounts. ' +
+                    'FIX: 1. Use a "Shared Drive" (Спільний диск) and share it with the Service Account email. ' +
+                    '2. OR use OAuth2 credentials (client_id, client_secret, refresh_token) instead of a Service Account. ' +
+                    '3. OR use OneDrive which handles personal accounts better.';
+            }
+
+            throw new Error(errorMessage);
         }
 
         const result = await uploadRes.json();
@@ -136,4 +145,20 @@ const getAccessTokenFromRefreshToken = async (credentials) => {
     return data.access_token;
 };
 
-module.exports = { uploadToGoogleDrive };
+/**
+ * Test connectivity by making a small metadata request
+ */
+const testGDriveConnection = async (credentials) => {
+    try {
+        const token = await getAccessToken(credentials);
+        const res = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok;
+    } catch (e) {
+        console.error('[GDRIVE] Connection test failed:', e.message);
+        return false;
+    }
+};
+
+module.exports = { uploadToGoogleDrive, testGDriveConnection };
