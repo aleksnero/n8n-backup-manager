@@ -48,7 +48,7 @@ jobs:
           cp README.md release/
           cp CHANGELOG.md release/
           cd release
-          zip -r ../release.zip .
+          zip -r ../deploy.zip .
 
       - name: Get version from tag
         id: get_version
@@ -61,7 +61,7 @@ jobs:
             "version": "${{ steps.get_version.outputs.VERSION }}",
             "releaseDate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "releaseNotes": "Release ${{ steps.get_version.outputs.VERSION }}",
-            "downloadUrl": "https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.VERSION }}/release.zip",
+            "downloadUrl": "https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.VERSION }}/deploy.zip",
             "minVersion": "1.0.0",
             "changelog": []
           }
@@ -71,7 +71,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            release.zip
+            deploy.zip
             version.json
           generate_release_notes: true
         env:

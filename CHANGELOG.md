@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.1] - 2026-01-16
+### Fixed
+- Authentication: Fixed critical middleware export bug and protected update routes.
+- Security: Added validation for download URLs in the update service.
+- Localization: Full English/Ukrainian localization for the Updates screen.
+- Bug Fixes: Corrected user ID handling in change-password route.
+- Docker: Improved port mapping and added .env.example support.
+
 ## [1.3.0] - 2026-01-03
 ### Added
 - Google Drive & Microsoft OneDrive cloud backup support.
