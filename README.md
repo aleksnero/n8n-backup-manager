@@ -79,8 +79,11 @@
 
 2. **Start with Docker Compose:**
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
+
+> [!NOTE]
+> If you are using a reverse proxy like **Nginx Proxy Manager**, ensure that this container is in the same network, or add the proxy network to the `docker-compose.yml` file. By default, the example above includes `npm_public` network.
 
 3. **Open in Browser:**
    ```
