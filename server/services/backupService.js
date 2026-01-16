@@ -678,13 +678,14 @@ const uploadToS3 = async (filepath, filename) => {
 };
 
 const uploadToCloud = async (filepath, filename, backupId) => {
-    const s3Enabled = await getSetting('aws_s3_enabled') === 'true'; // Keeping legacy key name 'aws_s3_enabled' for now to match UI
-    if (!s3Enabled) return;
+    const cloudEnabled = await getSetting('aws_s3_enabled') === 'true'; // Legacy key name, but now means "cloud backups enabled"
+    if (!cloudEnabled) return;
 
     const provider = await getSetting('cloud_provider') || 's3';
 
     try {
-        await logMessage('info', `Uploading backup to generic cloud provider: ${provider}...`);
+        await logMessage('info', `Uploading backup to cloud provider: ${provider}...`);
+
         if (provider === 'gdrive') {
             const credsStr = await getSetting('google_drive_credentials');
             const folderId = (await getSetting('google_drive_folder_id') || '').trim();
@@ -738,7 +739,7 @@ const uploadToCloud = async (filepath, filename, backupId) => {
             const endpoint = await getSetting('aws_s3_endpoint');
 
             if (!accessKeyId || !secretAccessKey || !bucket || !region) {
-                await logMessage('warn', 'S3 enabled but missing configuration. Skipping upload.');
+                await logMessage('warn', 'S3 provider selected but missing configuration. Skipping upload.');
                 return;
             }
 

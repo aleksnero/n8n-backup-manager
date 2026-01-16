@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.3] - 2026-01-17
+### Fixed
+- Cloud Storage: Fixed upload logic to correctly handle Google Drive and OneDrive providers without requiring S3 credentials.
+- Logging: Improved cloud provider log messages for better debugging.
+- Bug: S3 validation now only runs when S3 is the selected provider.
+
 ## [1.3.2] - 2026-01-16
 ### Fixed
 - Updater: Fixed critical bug where the updater didn't actually extract files (the "bricked" updater fix).

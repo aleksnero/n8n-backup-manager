@@ -1,15 +1,12 @@
 {
-    "version": "1.3.2",
+    "version": "1.3.3",
     "releaseDate": "2026-01-16T20:00:00Z",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.3.2/deploy.zip",
-    "releaseNotes": "Security and Localization update: Fixed Auth Middleware, validated download URLs, and added full Ukrainian localization for updates.",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.3.3/deploy.zip",
+    "releaseNotes": "Cloud Storage Fix: Resolved issue where Google Drive uploads were incorrectly attempting S3 validation.",
     "minVersion": "1.2.0",
     "changelog": [
-        "Fix: Critical Auth Middleware export (startup issues)",
-        "Security: Protection for update-related routes",
-        "Security: Validation for GitHub download URLs",
-        "i18n: Full Ukrainian & English localization for Updates screen",
-        "Bug: Corrected userId handling in change-password route",
-        "Docker: Dynamic PORT and JWT_SECRET environment variables"
+        "Fix: Cloud upload logic now correctly handles Google Drive and OneDrive providers",
+        "Fix: Improved log messages for cloud provider selection",
+        "Fix: S3 validation only runs when S3 is the selected provider"
     ]
 }
