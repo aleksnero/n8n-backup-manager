@@ -68,7 +68,7 @@ const rotateBackups = async (retentionCount) => {
 };
 
 const createBackup = async (type = 'manual') => {
-    const VERSION = '1.3.0';
+    const VERSION = '1.3.5';
     await logMessage('info', `Starting ${type} backup... (v${VERSION})`);
 
     // Ensure backup directory exists

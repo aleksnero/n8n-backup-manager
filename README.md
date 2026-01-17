@@ -6,7 +6,7 @@
 
 [![From Ukraine with Love](https://img.shields.io/badge/From%20Ukraine-with%20Love!-%230057B8?style=for-the-badge&logo=ukraine&labelColor=%23FFD700)](https://stand-with-ukraine.pp.ua)
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.5-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![Docker](https://img.shields.io/badge/docker-required-blue.svg)
@@ -14,6 +14,9 @@
 **Automatic backup and restore system for n8n**
 
 [Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Updates](#-updates) • [Screenshots](#-screenshots) • [🇺🇦 Українська версія](README.uk.md)
+
+### 🙏 Acknowledgements
+*This section will be used to thank contributors and advisors who help improve this project.*
 
 </div>
 
@@ -143,7 +146,16 @@ Go to **Settings** and configure:
 **Cloud Configuration:**
 - **Provider**: S3 Compatible, Google Drive, or Microsoft OneDrive
 - **S3**: Configure endpoint, region, bucket, and keys
-- **Google Drive**: Use Service Account JSON or OAuth2 credentials
+- **Google Drive** (via Service Account or OAuth2) JSON or **OAuth2 (Client ID, Secret, Refresh Token)**.
+  > [!NOTE]
+  > If you are using a personal Gmail account and see a Quota Exceeded error, use this JSON format:
+  > ```json
+  > {
+  >   "client_id": "YOUR_ID",
+  >   "client_secret": "YOUR_SECRET",
+  >   "refresh_token": "YOUR_TOKEN"
+  > }
+  > ```
 - **OneDrive**: Use Refresh Token or OAuth2 credentials
 
 > [!TIP]

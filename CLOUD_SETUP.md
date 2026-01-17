@@ -39,6 +39,20 @@ This guide provides step-by-step instructions for configuring cloud storage prov
 4. Paste the **Folder ID**.
 5. Save Settings.
 
+### 5. Alternative: OAuth2 Setup (To avoid Quota issues)
+If you are using a personal Gmail account and encounter "Service Accounts do not have storage quota" error, use OAuth2 instead:
+1. In the Google Cloud Console, create **OAuth 2.0 Client IDs** instead of a Service Account.
+2. Get the **Client ID**, **Client Secret**, and a **Refresh Token** (you can use tools like [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)).
+3. In Backup Manager, enter the credentials in this JSON format:
+```json
+{
+  "client_id": "YOUR_CLIENT_ID",
+  "client_secret": "YOUR_CLIENT_SECRET",
+  "refresh_token": "YOUR_REFRESH_TOKEN"
+}
+```
+4. This will use your personal storage (15GB+) instead of the limited service account quota.
+
 ---
 
 ## 🔵 Microsoft OneDrive Setup
