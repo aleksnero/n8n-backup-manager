@@ -1,4 +1,4 @@
-# Cloud Backup Setup Guide
+# Cloud Backup Setup Guide v1.3.5
 
 This guide provides step-by-step instructions for configuring cloud storage providers in n8n Backup Manager.
 
