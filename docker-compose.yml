@@ -1,3 +1,4 @@
+# n8n Backup Manager v1.3.5
 services:
   backup-manager:
     build: .

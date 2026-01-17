@@ -1,4 +1,4 @@
-# Verify Deploy Zip Content
+# Verify Deploy Zip Content v1.3.5
 
 $zipPath = "deploy.zip"
 
