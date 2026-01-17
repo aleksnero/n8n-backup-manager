@@ -2,6 +2,7 @@
 
 ## [1.3.5] - 2026-01-17
 
+
 ### Added
 - **Feature:** Dashboard status now performs real API checks for Google Drive and OneDrive (no more false positives).
 ### Fixed

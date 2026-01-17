@@ -1,5 +1,6 @@
 # Build Deployment Archive Script v1.3.5
 
+
 Write-Host "Starting build process..." -ForegroundColor Cyan
 
 # 1. Build Client

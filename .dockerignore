@@ -1,4 +1,5 @@
 # n8n Backup Manager v1.3.5
+
 node_modules
 client/node_modules
 server/node_modules

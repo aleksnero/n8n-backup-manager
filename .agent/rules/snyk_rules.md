@@ -4,6 +4,7 @@ always_on: true
 trigger: always_on
 applyTo: "**"
 description: Snyk Security At Inception v1.3.5
+
 ---
 
 # Project security best practices
