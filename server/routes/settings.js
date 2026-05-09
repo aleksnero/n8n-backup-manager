@@ -83,4 +83,17 @@ router.post('/update/apply', verifyToken, async (req, res) => {
     }
 });
 
+router.post('/notify/test', verifyToken, async (req, res) => {
+    try {
+        const { notifyWebhook } = require('../services/notificationService');
+        await notifyWebhook('backup_success', {
+            filename: 'test-backup-2026-01-01.tar.gz',
+            size: '12.34 MB'
+        });
+        res.json({ message: 'Test notification sent successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to send test notification: ' + error.message });
+    }
+});
+
 module.exports = router;

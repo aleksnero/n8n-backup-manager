@@ -1,23 +1,26 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
-import { LayoutDashboard, Database, Settings, FileText, LogOut, RefreshCw, Menu, X, Globe } from 'lucide-react';
+import { LayoutDashboard, Database, Settings, FileText, LogOut, RefreshCw, Menu, X, Globe, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Layout() {
     const { user, logout } = useAuth();
     const { t, language, toggleLanguage } = useTranslation();
+    const { theme, toggleTheme } = useTheme();
     const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [version, setVersion] = useState('');
 
     useEffect(() => {
-        // Fetch version
-        import('axios').then(axios => {
-            axios.get('/api/settings').then(res => {
+        // Версія додатку — отримується з /api/settings де вона вже інжектується сервером
+        axios.get('/api/settings')
+            .then(res => {
                 if (res.data.version) setVersion(res.data.version);
-            }).catch(() => setVersion('1.2.1'));
-        });
+            })
+            .catch(() => setVersion(''));
     }, []);
 
     const navItems = [
@@ -70,6 +73,16 @@ export default function Layout() {
                     >
                         <Globe size={16} />
                         <span>{language === 'en' ? 'Українська' : 'English'}</span>
+                    </button>
+
+                    <button
+                        onClick={toggleTheme}
+                        className="btn btn-secondary"
+                        title={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
+                        style={{ width: '100%', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                    >
+                        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                        <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
                     </button>
 
                     <button

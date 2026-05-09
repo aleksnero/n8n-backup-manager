@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.0] - 2026-05-09
+### Added
+- **Cloud OAuth2:** Added individual secure inputs (`client_id`, `client_secret`, `refresh_token`) for Google Drive and OneDrive, replacing raw JSON configuration.
+- **Documentation:** Added extensive English and Ukrainian guides for Telegram setup, Cloud setup, and Local Development.
+- **Documentation:** Replaced all legacy `.uk` file extensions with the standard `.ua`.
+- **Integrity Check:** `Integrity Check` feature is now OS-aware, automatically hiding itself on Windows/macOS to prevent `tar` command errors.
+### Fixed
+- **UI:** Improved button spacing and visual margins in the Notifications section.
+- **Localization:** Added new UI translations to `translations.js` for the new OAuth2 inputs.
 ## [1.3.5] - 2026-01-17
 
 

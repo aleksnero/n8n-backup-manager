@@ -7,6 +7,7 @@ const zlib = require('zlib');
 const Backup = require('../models/Backup');
 const Settings = require('../models/Settings');
 const Log = require('../models/Log');
+const { notifyWebhook } = require('./notificationService');
 const docker = new Docker();
 
 const BACKUP_DIR = path.join(__dirname, '../../backups');
@@ -67,7 +68,7 @@ const rotateBackups = async (retentionCount) => {
     }
 };
 
-const createBackup = async (type = 'manual') => {
+const createBackup = async (type = 'manual', label = null) => {
     const VERSION = '1.3.5';
     await logMessage('info', `Starting ${type} backup... (v${VERSION})`);
 
@@ -283,7 +284,15 @@ const createBackup = async (type = 'manual') => {
             path: filepath,
             size: stats.size,
             type,
+            // Зберігаємо мітку якщо передана
+            label: label || null,
             storageLocation: 'local'
+        });
+
+        // Сповіщення про успішний бекап (fire-and-forget)
+        notifyWebhook('backup_success', {
+            filename,
+            size: `${(stats.size / 1024 / 1024).toFixed(2)} MB`
         });
 
         // Attempt Generic Cloud Upload
@@ -298,6 +307,8 @@ const createBackup = async (type = 'manual') => {
         return backup;
     } catch (error) {
         await logMessage('error', `Backup failed: ${error.message}`);
+        // Сповіщення про помилку бекапу (fire-and-forget)
+        notifyWebhook('backup_failed', { error: error.message });
         console.error('Backup failed:', error);
         throw error;
     }

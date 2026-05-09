@@ -6,6 +6,11 @@ const Backup = sequelize.define('Backup', {
         type: DataTypes.STRING,
         allowNull: false
     },
+    label: {
+        // Необов'язкова мітка для ручного бекапу (задається користувачем)
+        type: DataTypes.STRING,
+        allowNull: true
+    },
     path: {
         type: DataTypes.STRING,
         allowNull: false

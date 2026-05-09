@@ -4,10 +4,23 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Backup Manager</title>
+    <title>n8n Backup Manager</title>
+    <meta name="description" content="Manage and automate backups for your n8n instance" />
+    <meta name="theme-color" content="#ea4b71" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Реєстрація Service Worker для PWA підтримки
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .catch((err) => console.warn('SW registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>

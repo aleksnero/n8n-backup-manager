@@ -1,12 +1,15 @@
 {
-    "version": "1.3.5",
-    "releaseDate": "2026-01-16T20:00:00Z",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.3.5/deploy.zip",
-    "releaseNotes": "Dashboard & Cloud Improvements: Added real-time connectivity checks for GDrive/OneDrive and improved quota error handling.",
+    "version": "1.4.0",
+    "releaseDate": "2026-05-09T10:00:00Z",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.4.0/deploy.zip",
+    "releaseNotes": "Major Update: OAuth2 secure fields for Cloud providers, Telegram guides, custom UI spaces, new local development configuration, and integrity check optimizations.",
     "minVersion": "1.2.0",
     "changelog": [
-        "Feature: Dashboard status now performs real API checks for Google Drive and OneDrive",
-        "Fix: Improved error message for Google Drive storage quota issues with actionable steps",
-        "Fix: Support for both Service Account and OAuth2 credentials in GDrive settings"
+        "Feature: OAuth2 secure fields (client_id, secret, refresh_token) for Google Drive and OneDrive without plain JSON",
+        "Feature: Platform-aware Integrity Check (hidden on Windows/macOS to prevent errors)",
+        "Documentation: Added extensive English and Ukrainian guides for Telegram, Cloud, and Local Development",
+        "Documentation: Replaced legacy .uk file extensions with standard .ua",
+        "UX/UI: Adjusted button spacing for test notifications",
+        "PWA: Expanded service-worker to support new caching needs"
     ]
 }

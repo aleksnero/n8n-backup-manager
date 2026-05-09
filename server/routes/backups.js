@@ -14,7 +14,9 @@ router.get('/', verifyToken, async (req, res) => {
 
 router.post('/', verifyToken, async (req, res) => {
     try {
-        const backup = await backupService.createBackup('manual');
+        // label — необов'язкове ім'я, яке користувач вводить при ручному бекапі
+        const { label } = req.body;
+        const backup = await backupService.createBackup('manual', label || null);
         res.json(backup);
     } catch (error) {
         res.status(500).send({ message: error.message });
@@ -92,6 +94,26 @@ router.get('/status', verifyToken, async (req, res) => {
         res.json(status);
     } catch (error) {
         res.status(500).send({ message: error.message });
+    }
+});
+
+/**
+ * Перевірка цілісності архіву бекапу.
+ * Тільки Linux: використовує `tar --list` для валідації tar.gz файлу.
+ * На Windows/macOS повертає { supported: false }.
+ */
+router.get('/:id/check', verifyToken, async (req, res) => {
+    // Linux-guard — функція доступна лише на Linux серверах
+    if (process.platform !== 'linux') {
+        return res.json({ supported: false, platform: process.platform });
+    }
+
+    try {
+        const { checkBackupIntegrity } = require('../services/integrityService');
+        const result = await checkBackupIntegrity(req.params.id);
+        res.json({ supported: true, ...result });
+    } catch (error) {
+        res.status(500).json({ supported: true, ok: false, error: error.message });
     }
 });
 

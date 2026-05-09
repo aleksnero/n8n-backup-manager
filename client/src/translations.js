@@ -116,6 +116,98 @@ export const translations = {
         db_user: 'Database User',
         db_password: 'Database Password',
         db_name: 'Database Name',
+
+        // Google Drive OAuth2 fields
+        gdrive_client_id: 'Client ID',
+        gdrive_client_id_hint: 'Find in Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client IDs.',
+        gdrive_client_secret: 'Client Secret',
+        gdrive_client_secret_hint: 'Same location as Client ID — click on the credential and copy the secret.',
+        gdrive_refresh_token: 'Refresh Token',
+        gdrive_refresh_token_hint: 'Use Google OAuth Playground: select scope',
+        gdrive_refresh_token_hint2: ', sign in and click "Exchange authorization code for tokens".',
+        gdrive_folder_id: 'Folder ID',
+        gdrive_folder_id_optional: '(optional)',
+        gdrive_folder_id_hint: 'Google Drive folder ID from the URL after /folders/. Leave empty to save to root.',
+
+        // OneDrive OAuth2 fields
+        od_client_id: 'Client ID (Application ID)',
+        od_client_id_hint: 'Find in Azure Portal → App registrations → your app → Application (client) ID.',
+        od_client_secret: 'Client Secret',
+        od_client_secret_hint: 'Azure Portal → your app → Certificates & secrets → New client secret.',
+        od_refresh_token: 'Refresh Token',
+        od_refresh_token_hint: 'Use',
+        od_refresh_token_hint2: ' or the OAuth2 flow to generate a refresh token with Files.ReadWrite scope.',
+
+        backups_title: 'Backups',
+        filename: 'Filename',
+        type: 'Type',
+        storage: 'Storage',
+        protected: 'Protected',
+        not_protected: 'Not protected',
+        download: 'Download',
+        restore: 'Restore',
+        no_backups: 'No backups yet',
+        label_col: 'Label',
+        confirm_restore: 'Restore this backup? Current n8n data will be overwritten.',
+        confirm_delete: 'Delete this backup? This action cannot be undone.',
+        unprotect_to_delete: 'Remove protection first',
+
+        // Common
+        confirm_btn: 'Confirm',
+        cancel_btn: 'Cancel',
+        backup_label_placeholder: 'Backup name (optional)',
+
+        // Logs page
+        logs_title: 'Logs',
+        copy_logs: 'Copy',
+        download_logs: 'Download',
+        refresh_logs: 'Refresh',
+        clear_logs: 'Clear Logs',
+        confirm_clear_logs: 'Clear all logs? This action cannot be undone.',
+        logs_cleared: 'Logs cleared successfully.',
+        clear_failed: 'Clear failed: ',
+        copied_clipboard: 'Copied!',
+        copy_failed: 'Failed to copy.',
+        no_logs: 'No logs available.',
+        no_logs_for_level: 'No logs for this level.',
+        level_all: 'All',
+        level_info: 'Info',
+        level_warn: 'Warning',
+        level_error: 'Error',
+
+        // Dashboard extras
+        latest_news: 'Latest News',
+        no_release_notes: 'No release notes available.',
+        update_available_hint: 'New update available! Check the Updates page.',
+        loading_news: 'Loading news...',
+        backing_up: 'Backing up...',
+
+        // Backups filters + empty states
+        search_placeholder: 'Search by name...',
+        all_types: 'All types',
+        sort_newest: 'Newest first',
+        sort_oldest: 'Oldest first',
+        no_backups_filtered: 'No matching backups',
+        no_backups_filtered_desc: 'Try adjusting the search or filter.',
+        no_backups_desc: 'Backups you create will appear here.',
+        confirm_rollback_version: 'Are you sure you want to rollback to this version? The application will restart.',
+
+        // Notifications (Telegram)
+        notifications_section: 'Notifications',
+        enable_notifications: 'Enable Telegram notifications',
+        telegram_token: 'Telegram Bot Token',
+        telegram_token_hint: 'Get it from @BotFather on Telegram',
+        telegram_chat_id: 'Telegram Chat ID',
+        telegram_chat_id_hint: 'Your chat ID or group ID (negative for groups)',
+        test_notification: 'Send Test Message',
+        notification_sent: 'Test notification sent successfully!',
+        notification_failed: 'Failed to send test notification.',
+
+        // Integrity check
+        integrity: 'Integrity',
+        integrity_ok: 'OK',
+        integrity_corrupt: 'Corrupted',
+        integrity_unsupported: 'Linux only',
     },
     uk: {
         // Sidebar & Layout
@@ -129,7 +221,7 @@ export const translations = {
         // Setup & Login
         setup_title: 'Початкове налаштування',
         login_title: 'Вхід',
-        username: 'Ім\'я користувача',
+        username: "Ім'я користувача",
         password: 'Пароль',
         create_admin: 'Створити адміністратора',
         login_btn: 'Увійти',
@@ -138,7 +230,7 @@ export const translations = {
         login_failed: 'Помилка входу: ',
 
         // Dashboard
-        connection_status: 'Статус з\'єднання',
+        connection_status: "Статус з'єднання",
         n8n_container: 'Контейнер n8n',
         n8n_container_name: 'Назва контейнера n8n',
         database: 'База даних',
@@ -218,7 +310,6 @@ export const translations = {
         secret_key: 'Secret Access Key',
         backup_retention_count: 'Зберігати бекапів',
         retention_help: 'Кількість останніх бекапів для збереження. Старіші бекапи (крім захищених) будуть видалені.',
-        s3_provider_warning: 'Наразі підтримується тільки S3-сумісне сховище. Інтеграція Google Drive та OneDrive скоро з\'яться!',
         hours: 'Годин',
         minutes: 'Хвилин',
         interval_type: 'Тип інтервалу',
@@ -231,5 +322,98 @@ export const translations = {
         db_user: 'Користувач БД',
         db_password: 'Пароль БД',
         db_name: 'Назва БД',
+
+        // Backups page
+        backups_title: 'Бекапи',
+        filename: 'Файл',
+        type: 'Тип',
+        storage: 'Сховище',
+        protected: 'Захищено',
+        not_protected: 'Не захищено',
+        download: 'Завантажити',
+        restore: 'Відновити',
+        no_backups: 'Бекапів ще немає',
+        label_col: 'Назва',
+        confirm_restore: 'Відновити цей бекап? Поточні дані n8n будуть перезаписані.',
+        confirm_delete: 'Видалити цей бекап? Дію неможливо скасувати.',
+        unprotect_to_delete: 'Спочатку зніміть захист',
+
+        // Common
+        confirm_btn: 'Підтвердити',
+        cancel_btn: 'Скасувати',
+        backup_label_placeholder: "Назва бекапу (необов'язково)",
+
+        // Logs page
+        logs_title: 'Логи',
+        copy_logs: 'Копіювати',
+        download_logs: 'Завантажити',
+        refresh_logs: 'Оновити',
+        clear_logs: 'Очистити логи',
+        confirm_clear_logs: 'Очистити всі логи? Дію неможна скасувати.',
+        logs_cleared: 'Логи успішно очищено.',
+        clear_failed: 'Помилка очищення: ',
+        copied_clipboard: 'Скопійовано!',
+        copy_failed: 'Не вдалось скопіювати.',
+        no_logs: 'Логів немає.',
+        no_logs_for_level: 'Немає логів цього рівня.',
+        level_all: 'Всі',
+        level_info: 'Інфо',
+        level_warn: 'Попередження',
+        level_error: 'Помилка',
+
+        // Dashboard extras
+        latest_news: 'Останні новини',
+        no_release_notes: 'Опис релізу відсутній.',
+        update_available_hint: 'Доступне нове оновлення! Перейдіть до сторінки Оновлень.',
+        loading_news: 'Завантаження новин...',
+        backing_up: 'Створення бекапу...',
+
+        // Backups filters + empty states
+        search_placeholder: 'Пошук за назвою...',
+        all_types: 'Всі типи',
+        sort_newest: 'Спочатку нові',
+        sort_oldest: 'Спочатку старі',
+        no_backups_filtered: 'Бекапів не знайдено',
+        no_backups_filtered_desc: 'Спробуйте змінити пошук або фільтр.',
+        no_backups_desc: 'Бекапи, які ви створите, з\'являться тут.',
+        confirm_rollback_version: 'Відкатити до цієї версії? Додаток буде перезапущено.',
+
+        // Notifications (Telegram)
+        notifications_section: 'Сповіщення',
+        enable_notifications: 'Увімкнути Telegram-сповіщення',
+        telegram_token: 'Telegram Bot Token',
+        telegram_token_hint: 'Отримайте у @BotFather у Telegram',
+        telegram_chat_id: 'Telegram Chat ID',
+        telegram_chat_id_hint: "Ваш чат ID або ID групи (від'ємний для груп)",
+        test_notification: 'Надіслати тестове повідомлення',
+        notification_sent: 'Тестове повідомлення надіслано!',
+        notification_failed: 'Не вдалось надіслати сповіщення.',
+
+        // Integrity check
+        integrity: 'Цілісність',
+        integrity_ok: 'Гаразд',
+        integrity_corrupt: 'Пошкоджено',
+        integrity_unsupported: 'Тільки Linux',
+
+        // Google Drive OAuth2 fields
+        gdrive_client_id: 'Client ID',
+        gdrive_client_id_hint: 'Знайдіть у Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client IDs.',
+        gdrive_client_secret: 'Client Secret',
+        gdrive_client_secret_hint: 'Там само де Client ID — натисніть на credentials і скопіюйте секрет.',
+        gdrive_refresh_token: 'Refresh Token',
+        gdrive_refresh_token_hint: 'Отримайте через Google OAuth Playground: виберіть scope',
+        gdrive_refresh_token_hint2: ', авторизуйтесь та натисніть "Exchange authorization code for tokens".',
+        gdrive_folder_id: 'Folder ID',
+        gdrive_folder_id_optional: "(необов'язково)",
+        gdrive_folder_id_hint: 'ID папки в Google Drive (з URL після /folders/). Якщо порожньо — бекапи зберігаються у корінь.',
+
+        // OneDrive OAuth2 fields
+        od_client_id: 'Client ID (Application ID)',
+        od_client_id_hint: 'Знайдіть у Azure Portal → App registrations → ваш додаток → Application (client) ID.',
+        od_client_secret: 'Client Secret',
+        od_client_secret_hint: 'Azure Portal → ваш додаток → Certificates & secrets → New client secret.',
+        od_refresh_token: 'Refresh Token',
+        od_refresh_token_hint: 'Використайте',
+        od_refresh_token_hint2: ' або OAuth2 flow для отримання токена з правами Files.ReadWrite.',
     }
 };

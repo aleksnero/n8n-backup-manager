@@ -1,0 +1,14 @@
+{
+  "name": "n8n-backup-manager",
+  "version": "1.4.0",
+  "private": true,
+  "description": "Backup manager for n8n Docker deployments",
+  "scripts": {
+    "dev": "concurrently --names \"SERVER,CLIENT\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "start": "npm start --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
