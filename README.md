@@ -86,23 +86,23 @@ This app runs on **Linux** (recommended for production) and **Windows/macOS** (f
 ## 📸 Screenshots
 
 ### Dashboard
-![Dashboard](screenshots/Dashboard.png)
+![Dashboard](screenshots/Dashboard_1.4.1.png)
 *Main dashboard with system status, backup size trend, and quick actions*
 
 ### Backups
-![Backups](screenshots/Backups.png)
+![Backups](screenshots/Backups_1.4.1.png)
 *Backup management: view, download, restore, integrity check*
 
 ### Settings
-![Settings](screenshots/Settings.png)
+![Settings](screenshots/Settings_1.4.1.png)
 *Connection settings, cloud providers, Telegram notifications*
 
 ### Updates
-![Updates](screenshots/Updates.png)
+![Updates](screenshots/Updates_1.4.1.png)
 *Automatic update system from GitHub*
 
 ### Logs
-![Logs](screenshots/Logs.png)
+![Logs](screenshots/Logs_1.4.1.png)
 *Detailed system logs*
 
 ---

@@ -86,23 +86,23 @@
 ## 📸 Скріншоти
 
 ### Dashboard
-![Dashboard](screenshots/Dashboard.png)
+![Dashboard](screenshots/Dashboard_1.4.1.png)
 *Головна сторінка зі статусом, графіком розміру бекапів та швидкими діями*
 
 ### Backups
-![Backups](screenshots/Backups.png)
+![Backups](screenshots/Backups_1.4.1.png)
 *Управління бекапами: перегляд, завантаження, відновлення, перевірка цілісності*
 
 ### Settings
-![Settings](screenshots/Settings.png)
+![Settings](screenshots/Settings_1.4.1.png)
 *Налаштування підключення, хмарних провайдерів, Telegram сповіщень*
 
 ### Updates
-![Updates](screenshots/Updates.png)
+![Updates](screenshots/Updates_1.4.1.png)
 *Система автоматичного оновлення з GitHub*
 
 ### Logs
-![Logs](screenshots/Logs.png)
+![Logs](screenshots/Logs_1.4.1.png)
 *Детальні логи системи*
 
 ---
