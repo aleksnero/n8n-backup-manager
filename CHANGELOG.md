@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.1] - 2026-05-09
+### Changed
+- **UX/UI**: Replaced static "Latest News" block on Dashboard with dynamic "System Activity" showing recent system logs (success, errors, info) and prominent update banners.
+
 ## [1.4.0] - 2026-05-09
 ### Added
 - **Cloud OAuth2:** Added individual secure inputs (`client_id`, `client_secret`, `refresh_token`) for Google Drive and OneDrive, replacing raw JSON configuration.

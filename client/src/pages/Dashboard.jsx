@@ -39,6 +39,7 @@ export default function Dashboard() {
     const [settings, setSettings] = useState({});
     const [loading, setLoading] = useState(true);
     const [news, setNews] = useState(null);
+    const [logs, setLogs] = useState([]);
     const [countdown, setCountdown] = useState('');
     const [status, setStatus] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -69,12 +70,14 @@ export default function Dashboard() {
 
     const fetchData = async () => {
         try {
-            const [backupsRes, settingsRes] = await Promise.all([
+            const [backupsRes, settingsRes, logsRes] = await Promise.all([
                 axios.get('/api/backups'),
                 axios.get('/api/settings'),
+                axios.get('/api/logs'),
             ]);
             setBackups(backupsRes.data);
             setSettings(settingsRes.data);
+            setLogs(logsRes.data);
             updateCountdown(settingsRes.data.backup_schedule);
 
             // Отримуємо новини (інфо про оновлення) — помилки ігноруємо тихо
@@ -255,20 +258,42 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Новини / останнє оновлення */}
+                {/* System Activity & Updates */}
                 <div className="card" style={{ gridColumn: '1 / -1', border: '1px dashed var(--border)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                        <span style={{ fontSize: '1.2rem' }}>📢</span>
-                        <h3 style={{ margin: 0 }}>{t('latest_news')}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                        <span style={{ fontSize: '1.2rem' }}>📊</span>
+                        <h3 style={{ margin: 0 }}>{t('system_activity')}</h3>
                     </div>
-                    {news ? (
-                        <div>
-                            <p><strong>v{news.remoteVersion}</strong> — {new Date(news.releaseDate || Date.now()).toLocaleDateString()}</p>
-                            <p>{news.releaseNotes || t('no_release_notes')}</p>
-                            {news.hasUpdate && <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>{t('update_available_hint')}</span>}
+                    {news && news.hasUpdate && (
+                        <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius)', borderLeft: '4px solid var(--accent)', marginBottom: '1rem' }}>
+                            <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--accent)' }}>{t('update_available_hint')}</h4>
+                            <p style={{ margin: 0 }}><strong>v{news.remoteVersion}</strong> — {new Date(news.releaseDate || Date.now()).toLocaleDateString()}</p>
+                        </div>
+                    )}
+                    {logs && logs.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {logs.slice(0, 4).map(log => (
+                                <div key={log.id} style={{ display: 'flex', gap: '1rem', fontSize: '0.9rem', borderBottom: '1px solid var(--bg-secondary)', paddingBottom: '0.5rem' }}>
+                                    <span style={{ color: 'var(--text-secondary)', minWidth: '130px' }}>
+                                        {new Date(log.createdAt).toLocaleString()}
+                                    </span>
+                                    <span style={{ 
+                                        color: log.level === 'error' ? 'var(--error)' : 
+                                               log.level === 'warning' ? 'var(--warning)' : 
+                                               log.level === 'success' ? 'var(--success)' : 'var(--accent)',
+                                        fontWeight: 'bold',
+                                        minWidth: '70px'
+                                    }}>
+                                        {log.level.toUpperCase()}
+                                    </span>
+                                    <span style={{ color: 'var(--text-primary)', wordBreak: 'break-word' }}>
+                                        {log.message}
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     ) : (
-                        <p style={{ color: 'var(--text-secondary)' }}>{t('loading_news')}</p>
+                        <p style={{ color: 'var(--text-secondary)' }}>{t('no_logs')}</p>
                     )}
                 </div>
             </div>

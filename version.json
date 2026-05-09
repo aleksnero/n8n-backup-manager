@@ -1,8 +1,8 @@
 {
-    "version": "1.4.0",
+    "version": "1.4.1",
     "releaseDate": "2026-05-09T10:00:00Z",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.4.0/deploy.zip",
-    "releaseNotes": "Major Update: OAuth2 secure fields for Cloud providers, Telegram guides, custom UI spaces, new local development configuration, and integrity check optimizations.",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.4.1/deploy.zip",
+    "releaseNotes": "UX: Added System Activity logs to the Dashboard. Refactoring: Replaced static Release Notes with dynamic log events.",
     "minVersion": "1.2.0",
     "changelog": [
         "Feature: OAuth2 secure fields (client_id, secret, refresh_token) for Google Drive and OneDrive without plain JSON",

@@ -177,6 +177,7 @@ export const translations = {
 
         // Dashboard extras
         latest_news: 'Latest News',
+        system_activity: 'System Activity',
         no_release_notes: 'No release notes available.',
         update_available_hint: 'New update available! Check the Updates page.',
         loading_news: 'Loading news...',
@@ -363,6 +364,7 @@ export const translations = {
 
         // Dashboard extras
         latest_news: 'Останні новини',
+        system_activity: 'Системна активність',
         no_release_notes: 'Опис релізу відсутній.',
         update_available_hint: 'Доступне нове оновлення! Перейдіть до сторінки Оновлень.',
         loading_news: 'Завантаження новин...',
