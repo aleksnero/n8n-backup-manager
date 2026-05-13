@@ -15,8 +15,13 @@
 
 [Features](#-features) • [Platform Support](#️-platform-support) • [Installation](#️-installation) • [Usage](#-usage) • [Updates](#-update-system) • [Screenshots](#-screenshots) • [🇺🇦 Українська версія](README.ua.md)
 
-### 🙏 Acknowledgements
-*This section will be used to thank contributors and advisors who help improve this project.*
+### 🌟 Special Thanks
+
+Huge thanks to the community members who help improve this project through feedback, ideas, and testing:
+
+**[@hoverlover](https://github.com/hoverlover)** • **[@falone](https://github.com/falone)**
+
+*Your help is greatly appreciated!* ❤️
 
 </div>
 

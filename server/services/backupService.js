@@ -78,8 +78,10 @@ const createBackup = async (type = 'manual', label = null) => {
         await logMessage('info', `Created backup directory: ${BACKUP_DIR}`);
     }
 
-    const containerName = await getSetting('db_container_name') || await getSetting('n8n_container_name') || 'n8n';
     const dbType = await getSetting('db_type') || 'sqlite';
+    const containerName = dbType === 'postgres' 
+        ? (await getSetting('db_container_name') || await getSetting('n8n_container_name') || 'n8n')
+        : (await getSetting('n8n_container_name') || 'n8n');
     const useCompression = (await getSetting('backup_compression')) === 'true';
     const useEncryption = (await getSetting('backup_encryption')) === 'true';
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -337,8 +339,10 @@ const restoreBackup = async (id) => {
     const backup = await Backup.findByPk(id);
     if (!backup) throw new Error('Backup not found');
 
-    const containerName = await getSetting('db_container_name') || await getSetting('n8n_container_name') || 'n8n';
     const dbType = await getSetting('db_type') || 'sqlite';
+    const containerName = dbType === 'postgres' 
+        ? (await getSetting('db_container_name') || await getSetting('n8n_container_name') || 'n8n')
+        : (await getSetting('n8n_container_name') || 'n8n');
     const container = docker.getContainer(containerName);
 
     let readStream = fs.createReadStream(backup.path);
