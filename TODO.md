@@ -12,3 +12,4 @@ This document tracks planned features, enhancements, and known issues for future
 - [ ] Provide more granular backup retention policies (e.g., keep 7 daily, 4 weekly, 12 monthly).
 - [ ] Allow backing up only specific workflows or excluding certain tables.
 - [ ] Add support for Amazon S3 compatible providers explicitly in the UI (e.g., MinIO, Backblaze B2, Cloudflare R2).
+- [ ] **Independent News Feed:** Implement a dynamic news feed in the dashboard that fetches announcements from a `news.json` file, allowing us to inform users about upcoming features or important notices without releasing a new version.
