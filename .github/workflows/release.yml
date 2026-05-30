@@ -63,13 +63,25 @@ jobs:
           # Optionally update version field if it doesn't match tag, but we'll trust our manual bump
           # sed -i 's/"version": ".*"/"version": "${{ steps.get_version.outputs.VERSION }}"/' version.json
 
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          # Витягуємо секцію CHANGELOG.md для поточної версії (між ## [X.Y.Z] та наступним ## [)
+          BODY=$(awk "/^## \[${VERSION}\]/{found=1; next} /^## \[/{if(found) exit} found{print}" CHANGELOG.md)
+          # Використовуємо EOF-delimiter для багаторядкового output
+          echo "RELEASE_BODY<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
+          name: "v${{ steps.get_version.outputs.VERSION }}"
+          body: ${{ steps.changelog.outputs.RELEASE_BODY }}
           files: |
             deploy.zip
             version.json
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
