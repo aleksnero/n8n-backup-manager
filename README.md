@@ -1,4 +1,4 @@
-# n8n Backup Manager v1.4.1
+# n8n Backup Manager v1.5.0
 
 <div align="center">
 
