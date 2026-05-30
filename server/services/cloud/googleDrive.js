@@ -161,4 +161,47 @@ const testGDriveConnection = async (credentials) => {
     }
 };
 
-module.exports = { uploadToGoogleDrive, testGDriveConnection };
+
+const deleteFromGoogleDrive = async (filename, credentials, folderId) => {
+    try {
+        const token = await getAccessToken(credentials);
+
+        if (!folderId) {
+            throw new Error('Google Drive Folder ID is REQUIRED.');
+        }
+
+        const query = encodeURIComponent(`name = '${filename}' and '${folderId}' in parents and trashed = false`);
+        const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!searchRes.ok) {
+            const err = await searchRes.text();
+            throw new Error(`Failed to search for file in GDrive: ${err}`);
+        }
+
+        const { files } = await searchRes.json();
+        if (!files || files.length === 0) {
+            console.log(`[GDRIVE] File ${filename} not found, skipping deletion.`);
+            return;
+        }
+
+        const fileId = files[0].id;
+        const deleteRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!deleteRes.ok) {
+            const err = await deleteRes.text();
+            throw new Error(`Failed to delete file from GDrive: ${err}`);
+        }
+
+        console.log(`[GDRIVE] Deleted ${filename} (ID: ${fileId})`);
+    } catch (error) {
+        console.error('[GDRIVE] Deletion error:', error.message);
+        throw error;
+    }
+};
+
+module.exports = { uploadToGoogleDrive, testGDriveConnection, deleteFromGoogleDrive };

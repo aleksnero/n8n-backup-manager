@@ -1,5 +1,5 @@
 const Docker = require('dockerode');
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -56,6 +56,10 @@ const rotateBackups = async (retentionCount) => {
                     if (fs.existsSync(backup.path)) {
                         fs.unlinkSync(backup.path);
                     }
+
+                    // Delete from cloud storage if uploaded
+                    await deleteFromCloud(backup.filename, backup.storageLocation);
+
                     await backup.destroy();
                     await logMessage('info', `Deleted old backup: ${backup.filename}`);
                 } catch (err) {
@@ -190,48 +194,96 @@ const createBackup = async (type = 'manual', label = null) => {
 
             const container = docker.getContainer(containerName);
 
-            // Attempt Atomic Backup via sqlite3 CLI
-            let sourcePath = dbPath;
-            let isTemp = false;
-            const tempDir = '/tmp/n8n_backup_atomic';
-            const tempFile = `${tempDir}/database.sqlite`;
-
+            // Prerequisite validation: check if sqlite3 CLI is installed in n8n container
+            let sqlite3Installed = false;
             try {
-                // Try to create atomic copy using sqlite3 CLI
-                // 1. mkdir
-                await container.exec({ Cmd: ['mkdir', '-p', tempDir] }).then(e => e.start());
-
-                // 2. sqlite3 .backup
-                // We use sh -c to handle potential command finding or redurection if needed, but direct Exec is safest for args.
-                // Assuming `sqlite3` is in PATH.
-                const exec = await container.exec({
-                    Cmd: ['sqlite3', dbPath, `.backup '${tempFile}'`],
+                const execCheck = await container.exec({
+                    Cmd: ['which', 'sqlite3'],
                     AttachStdout: true,
                     AttachStderr: true
                 });
-
-                // We need to wait for it to finish and check exit code.
-                const stream = await exec.start();
-                // Check exit code? Dockerode exec start returns stream. To get exit code we inspect after stream ends.
-
+                const checkStream = await execCheck.start();
                 await new Promise((resolve, reject) => {
-                    stream.on('end', resolve);
-                    stream.on('error', reject);
-                    stream.resume(); // consume stream
+                    checkStream.on('end', resolve);
+                    checkStream.on('error', reject);
+                    checkStream.resume();
                 });
-
-                const inspect = await exec.inspect();
-                if (inspect.ExitCode === 0) {
-                    await logMessage('info', 'Successfully created atomic SQLite backup copy.');
-                    sourcePath = tempFile;
-                    isTemp = true;
-                } else {
-                    await logMessage('warn', `sqlite3 CLI failed (Exit ${inspect.ExitCode}), falling back to direct file copy. (This is normal if sqlite3 is not installed)`);
-                }
-
-            } catch (err) {
-                await logMessage('warn', `Atomic backup attempt failed: ${err.message}. Falling back.`);
+                const checkInspect = await execCheck.inspect();
+                sqlite3Installed = checkInspect.ExitCode === 0;
+            } catch (e) {
+                sqlite3Installed = false;
             }
+
+            if (!sqlite3Installed) {
+                throw new Error("sqlite3 is not installed inside the n8n container. Atomic SQLite backup cannot run. Please install sqlite3 inside your n8n container or use an n8n image that contains sqlite3.");
+            }
+
+            // Path & Database validation: check if db_path exists and is a valid n8n SQLite DB
+            let dbValid = false;
+            let validationError = 'Database file does not exist or is invalid';
+            try {
+                const execValidate = await container.exec({
+                    Cmd: ['sqlite3', dbPath, "SELECT name FROM sqlite_master WHERE type='table' AND (name='workflow_entity' OR name='workflow');"],
+                    AttachStdout: true,
+                    AttachStderr: true
+                });
+                const validateStream = await execValidate.start();
+                let output = '';
+                validateStream.on('data', (chunk) => output += chunk.toString());
+                await new Promise((resolve, reject) => {
+                    validateStream.on('end', resolve);
+                    validateStream.on('error', reject);
+                });
+                const validateInspect = await execValidate.inspect();
+                if (validateInspect.ExitCode === 0 && output.trim()) {
+                    dbValid = true;
+                } else {
+                    validationError = output.trim() || `sqlite3 returned exit code ${validateInspect.ExitCode}`;
+                }
+            } catch (e) {
+                validationError = e.message;
+            }
+
+            if (!dbValid) {
+                throw new Error(`Invalid SQLite db_path: '${dbPath}'. The file must exist and be a valid n8n SQLite database. Error details: ${validationError}`);
+            }
+
+            // Attempt Atomic Backup via sqlite3 CLI (No direct copy fallback)
+            const tempDir = '/tmp/n8n_backup_atomic';
+            const tempFile = `${tempDir}/database.sqlite`;
+            const sourcePath = tempFile;
+            const isTemp = true;
+
+            // 1. mkdir
+            await container.exec({ Cmd: ['mkdir', '-p', tempDir] }).then(e => e.start());
+
+            // 2. sqlite3 .backup
+            const exec = await container.exec({
+                Cmd: ['sqlite3', dbPath, `.backup '${tempFile}'`],
+                AttachStdout: true,
+                AttachStderr: true
+            });
+
+            const execStream = await exec.start();
+            let stderrData = '';
+            execStream.on('data', (chunk) => {
+                stderrData += chunk.toString();
+            });
+
+            await new Promise((resolve, reject) => {
+                execStream.on('end', resolve);
+                execStream.on('error', reject);
+            });
+
+            const inspect = await exec.inspect();
+            if (inspect.ExitCode !== 0) {
+                try {
+                    await container.exec({ Cmd: ['rm', '-rf', tempDir] }).then(e => e.start());
+                } catch (_) {}
+                throw new Error(`Atomic SQLite backup failed: ${stderrData.trim() || 'sqlite3 command returned non-zero exit code'}`);
+            }
+
+            await logMessage('info', 'Successfully created atomic SQLite backup copy.');
 
             const stream = await container.getArchive({ path: sourcePath });
 
@@ -331,6 +383,9 @@ const deleteBackup = async (id) => {
     if (fs.existsSync(backup.path)) {
         fs.unlinkSync(backup.path);
     }
+
+    // Delete from cloud storage if uploaded
+    await deleteFromCloud(backup.filename, backup.storageLocation);
 
     await backup.destroy();
 };
@@ -437,34 +492,48 @@ const restoreBackup = async (id) => {
 
         } else {
             // SQLite
-            // If it was .tar.gz or .tar.gz.enc, we have now decompressed it to a tar stream.
-            // If the original was just .tar (uncompressed), we just have the stream.
-            // But wait, `readStream` is now the content.
-            // If the original backup of SQLite was made via `container.getArchive`, it IS a tar file.
-            // So if we gunzip/decrypt it, we are left with a TAR stream. 
-            // `container.putArchive` EXPECTS a tar stream.
-
-            // Check if we need to re-tar? 
-            // When we created backup: `container.getArchive` -> (optional gzip) -> (optional encrypt) -> file
-            // Restore: file -> (optional decrypt) -> (optional gunzip) -> TAR STREAM
-
-            // BUT: `container.getArchive` returns a tarball containing the file with full path or relative?
-            // Usually it preserves the path structure requested.
-            // If we restore it to the root '/' it might try to overwrite /home/node/...
-
             const dbPath = await getSetting('db_path') || '/home/node/.n8n/database.sqlite';
             const dbDir = path.dirname(dbPath);
+            const dbFileName = path.basename(dbPath);
 
-            await logMessage('info', `Restoring SQLite backup to ${dbDir}`);
+            // 1. Manage target container lifecycle (Stop if running)
+            let wasRunning = false;
+            try {
+                const inspect = await container.inspect();
+                wasRunning = inspect.State.Running;
+                if (wasRunning) {
+                    await logMessage('info', `Stopping container ${containerName} for SQLite restore...`);
+                    await container.stop();
+                }
+            } catch (err) {
+                await logMessage('warn', `Could not stop container: ${err.message}`);
+            }
 
-            // If we simply pipe the TAR stream to putArchive, it should extract relative to `path`.
-            // But `getArchive` usually creates a tar with the file at the top level?
+            try {
+                await logMessage('info', `Restoring SQLite backup to ${dbDir}`);
+                // 2. Put the restored database file
+                await container.putArchive(readStream, { path: dbDir });
 
-            // Let's assume the tar structure is correct for now as it's just a reverse of creation.
-            // However, `readStream` might not be a valid node-stream if it comes from fs directly without pipe? 
-            // It is.
+                // 3. Overwrite WAL/SHM files with 0-byte placeholders to prevent stale data masking
+                await logMessage('info', 'Neutralizing target WAL/SHM files...');
+                const archiver = require('archiver');
+                const archive = archiver('tar');
+                archive.append('', { name: dbFileName + '-wal' });
+                archive.append('', { name: dbFileName + '-shm' });
+                archive.finalize();
+                await container.putArchive(archive, { path: dbDir });
 
-            await container.putArchive(readStream, { path: dbDir });
+            } finally {
+                // 4. Restart container if it was running
+                if (wasRunning) {
+                    try {
+                        await logMessage('info', `Starting container ${containerName} back up...`);
+                        await container.start();
+                    } catch (err) {
+                        await logMessage('error', `Failed to restart container: ${err.message}`);
+                    }
+                }
+            }
         }
 
         await logMessage('info', 'Restore completed successfully');
@@ -557,8 +626,29 @@ const checkConnectionStatus = async () => {
                 status.database = false;
             }
         } else {
-            // For SQLite, database status is tied to n8n container status
-            status.database = status.n8n;
+            // For SQLite, database status is tied to n8n container status AND sqlite3 availability
+            if (status.n8n) {
+                try {
+                    const container = docker.getContainer(n8nName);
+                    const execCheck = await container.exec({
+                        Cmd: ['which', 'sqlite3'],
+                        AttachStdout: true,
+                        AttachStderr: true
+                    });
+                    const checkStream = await execCheck.start();
+                    await new Promise((resolve, reject) => {
+                        checkStream.on('end', resolve);
+                        checkStream.on('error', reject);
+                        checkStream.resume();
+                    });
+                    const checkInspect = await execCheck.inspect();
+                    status.database = checkInspect.ExitCode === 0;
+                } catch (e) {
+                    status.database = false;
+                }
+            } else {
+                status.database = false;
+            }
         }
 
         // 3. Check Google Drive connectivity
@@ -793,6 +883,65 @@ const uploadToCloud = async (filepath, filename, backupId) => {
 
     } catch (error) {
         await logMessage('error', `Failed to upload to Cloud (${error.message})`);
+    }
+};
+
+
+const deleteFromCloud = async (filename, storageLocation) => {
+    if (!storageLocation) return;
+
+    const locations = storageLocation.split(',');
+
+    for (const loc of locations) {
+        const trimmedLoc = loc.trim();
+        if (trimmedLoc === 'local' || !trimmedLoc) continue;
+
+        try {
+            await logMessage('info', `Deleting backup from cloud location: ${trimmedLoc}...`);
+
+            if (trimmedLoc === 'gdrive') {
+                const credsStr = await getSetting('google_drive_credentials');
+                const folderId = (await getSetting('google_drive_folder_id') || '').trim();
+                if (credsStr) {
+                    const credentials = typeof credsStr === 'string' ? JSON.parse(credsStr) : credsStr;
+                    const { deleteFromGoogleDrive } = require('./cloud/googleDrive');
+                    await deleteFromGoogleDrive(filename, credentials, folderId);
+                }
+            } else if (trimmedLoc === 'onedrive') {
+                const refreshToken = await getSetting('onedrive_refresh_token');
+                if (refreshToken) {
+                    const { deleteFromOneDrive } = require('./cloud/oneDrive');
+                    await deleteFromOneDrive(filename, refreshToken);
+                }
+            } else if (trimmedLoc === 's3') {
+                const accessKeyId = await getSetting('aws_s3_access_key');
+                const secretAccessKey = await getSetting('aws_s3_secret_key');
+                const region = await getSetting('aws_s3_region');
+                const bucket = await getSetting('aws_s3_bucket');
+                const endpoint = await getSetting('aws_s3_endpoint');
+
+                if (accessKeyId && secretAccessKey && bucket && region) {
+                    const config = {
+                        region,
+                        credentials: { accessKeyId, secretAccessKey }
+                    };
+
+                    if (endpoint) {
+                        config.endpoint = endpoint;
+                        config.forcePathStyle = true;
+                    }
+
+                    const s3Client = new S3Client(config);
+                    await s3Client.send(new DeleteObjectCommand({
+                        Bucket: bucket,
+                        Key: filename
+                    }));
+                    await logMessage('info', `Successfully deleted ${filename} from S3`);
+                }
+            }
+        } catch (error) {
+            await logMessage('error', `Failed to delete from Cloud (${trimmedLoc}): ${error.message}`);
+        }
     }
 };
 

@@ -1,15 +1,17 @@
 {
-    "version": "1.4.1",
-    "releaseDate": "2026-05-09T10:00:00Z",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.4.1/deploy.zip",
-    "releaseNotes": "UX: Added System Activity logs to the Dashboard. Refactoring: Replaced static Release Notes with dynamic log events.",
+    "version": "1.5.0",
+    "releaseDate": "2026-05-30T10:00:00Z",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.5.0/deploy.zip",
+    "releaseNotes": "Major SQLite reliability release: safe restore with container lifecycle management, deep integrity checks via sqlite3 driver, cloud storage cleanup on backup deletion, and UX improvements.",
     "minVersion": "1.2.0",
     "changelog": [
-        "Feature: OAuth2 secure fields (client_id, secret, refresh_token) for Google Drive and OneDrive without plain JSON",
-        "Feature: Platform-aware Integrity Check (hidden on Windows/macOS to prevent errors)",
-        "Documentation: Added extensive English and Ukrainian guides for Telegram, Cloud, and Local Development",
-        "Documentation: Replaced legacy .uk file extensions with standard .ua",
-        "UX/UI: Adjusted button spacing for test notifications",
-        "PWA: Expanded service-worker to support new caching needs"
+        "Feature: Cloud Storage Deletion — backups are now auto-deleted from GDrive/OneDrive/S3 on local delete or rotation (#36)",
+        "Feature: SQLite sqlite3 prerequisite validation on Dashboard connection status",
+        "Fix (P0): Reworked SQLite restore — safe container stop, WAL/SHM neutralization, automatic restart",
+        "Fix: Resolved SQLite container stop error — no longer stops unrelated db_container for SQLite setups (#35)",
+        "Fix: Settings UI auto-clears db_container_name when db_type is sqlite",
+        "UX: Improved Telegram Chat ID hint to reference @userinfobot",
+        "Rewrite: Integrity checks now prove recoverability — SQLite via PRAGMA integrity_check + schema validation, Postgres via full decrypt/decompress pipeline",
+        "Docs: Updated screenshots, added community contributors, updated README.ua.md"
     ]
 }

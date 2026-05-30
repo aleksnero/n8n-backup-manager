@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.5.0] - 2026-05-30
+### Added
+- **Cloud Storage Deletion (#36):** Backups are now automatically deleted from cloud providers (Google Drive, OneDrive, S3) when manually deleted or rotated locally — prevents cloud storage accumulation.
+- **SQLite `sqlite3` Prerequisite Check:** Dashboard connection status now validates that the `sqlite3` binary is available inside the n8n container, giving a clear diagnostic instead of silent failures.
+### Fixed
+- **Backup (SQLite Critical P0):** Completely reworked SQLite backup restore — the app now safely stops the n8n container before restore, neutralizes stale WAL/SHM files, and restarts the container afterwards.
+- **Backup (SQLite):** Resolved container stop error when backing up SQLite databases — the app no longer attempts to stop an unrelated `db_container_name` for SQLite-only setups (#35).
+- **Settings (UI):** When `db_type` is set to `sqlite`, `db_container_name` is now automatically cleared to prevent accidental use of a PostgreSQL container name.
+- **Localization:** Improved Telegram Chat ID hint to reference `@userinfobot` for easier onboarding (EN/UA).
+### Changed
+- **Integrity Service (Rewrite):** SQLite integrity checks now extract the backup to a temp directory, open the database with the `sqlite3` driver, run `PRAGMA integrity_check`, and validate that n8n schema tables exist — proving actual recoverability instead of just checking archive readability. PostgreSQL SQL backups are verified through full decryption/decompression pipeline.
+- **Documentation:** Updated all screenshots to v1.4.1 visuals and removed legacy images.
+- **Documentation:** Added community contributors section (Special Thanks) to README.
+- **Documentation:** Updated README.ua.md with matching changes.
+
 ## [1.4.1] - 2026-05-09
 ### Changed
 - **UX/UI**: Replaced static "Latest News" block on Dashboard with dynamic "System Activity" showing recent system logs (success, errors, info) and prominent update banners.

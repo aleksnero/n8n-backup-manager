@@ -30,7 +30,7 @@ export default function Settings() {
     const [confirmUpdate, setConfirmUpdate] = useState(false);
     const [settings, setSettings] = useState({
         n8n_container_name: 'n8n',
-        db_container_name: 'postgres',
+        db_container_name: '',
         db_type: 'sqlite',
         db_path: '/home/node/.n8n/database.sqlite',
         db_user: 'n8n',
@@ -98,7 +98,14 @@ export default function Settings() {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setSettings(prev => ({ ...prev, [name]: type === 'checkbox' ? (checked ? 'true' : 'false') : value }));
+        setSettings(prev => {
+            const updated = { ...prev, [name]: type === 'checkbox' ? (checked ? 'true' : 'false') : value };
+            // Êîëè òèï ÁÄ çì³íþºòüñÿ íà sqlite — î÷èùàºìî db_container_name, áî â³í íå ïîòð³áåí
+            if (name === 'db_type' && value === 'sqlite') {
+                updated.db_container_name = '';
+            }
+            return updated;
+        });
     };
 
     const updateSchedule = (value, unit) => {
@@ -154,7 +161,12 @@ export default function Settings() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('/api/settings', settings);
+            // Äëÿ SQLite íå â³äïðàâëÿºìî db_container_name ùîá óíèêíóòè çáåðåæåííÿ 'postgres' ÿê äåôîëòó
+            const payload = { ...settings };
+            if (payload.db_type === 'sqlite') {
+                payload.db_container_name = '';
+            }
+            await axios.post('/api/settings', payload);
             // ÐŸÐ¾ÐºÐ°Ð·ÑƒÑ”Ð¼Ð¾ Ñ‚Ð¸Ð¼Ñ‡Ð°ÑÐ¾Ð²Ð¸Ð¹ feedback Ð½Ð° ÐºÐ½Ð¾Ð¿Ñ†Ñ– Ð·Ð°Ð¼Ñ–ÑÑ‚ÑŒ Ð¿ÐµÑ€ÐµÑ…Ð¾Ð´Ñƒ
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 2000);

@@ -3,10 +3,17 @@
 This document tracks planned features, enhancements, and known issues for future releases.
 
 ## Next Release (v1.5.0 / Upcoming)
+- [x] **Critical SQLite Fixes (QA Report P0):** 
+  - Remove/block unsafe direct-copy fallback for live SQLite WAL databases.
+  - Safely manage SQLite WAL/SHM files and target process lifecycle during restore.
+  - Validate SQLite `db_path` and reject backups that target an empty or non-n8n database.
+- [x] **High Priority SQLite Fixes (QA Report P1):**
+  - Add `sqlite3` prerequisite validation in container.
+  - Upgrade integrity checks to prove recoverability.
 - [ ] **Prebuilt Docker Image:** Setup GitHub Actions to automatically build and push a prebuilt Docker image to Docker Hub or GHCR. This will allow users to install the app using just a `docker-compose.yml` file without needing to build from source (`build: .`).
 - [ ] **Log Management UI:** Add a way to clear/trim system logs directly from the Dashboard or Settings UI to prevent the database from growing indefinitely.
 - [ ] **Verify Telegram Settings UI:** Add a dedicated "Test Connection" button directly inside the Telegram settings block that sends a dummy notification to verify the Chat ID and Token.
-- [ ] **Cloud Storage Deletion (Issue #36):** Implement file deletion from cloud providers (S3, GDrive, OneDrive) when backups are rotated or manually deleted, preventing cloud storage accumulation.
+- [x] **Cloud Storage Deletion (Issue #36):** Implement file deletion from cloud providers (S3, GDrive, OneDrive) when backups are rotated or manually deleted, preventing cloud storage accumulation.
 
 ## Backlog / Ideas
 - [ ] Provide more granular backup retention policies (e.g., keep 7 daily, 4 weekly, 12 monthly).

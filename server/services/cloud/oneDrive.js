@@ -158,4 +158,39 @@ const testOneDriveConnection = async (credentials) => {
     }
 };
 
-module.exports = { uploadToOneDrive, testOneDriveConnection };
+
+const deleteFromOneDrive = async (filename, credentials) => {
+    try {
+        let creds = credentials;
+        if (typeof credentials === 'string') {
+            const trimmed = credentials.trim();
+            if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+                try {
+                    creds = JSON.parse(trimmed);
+                } catch (e) {
+                    console.error('[OneDrive] JSON Parse failed.');
+                }
+            } else {
+                creds = trimmed;
+            }
+        }
+
+        const accessToken = await refreshAccessToken(creds);
+
+        const deleteRes = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/Backups/${filename}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+
+        if (!deleteRes.ok && deleteRes.status !== 404) {
+            throw new Error(`OneDrive Deletion Error: ${await deleteRes.text()}`);
+        }
+
+        console.log(`[ONEDRIVE] Deleted ${filename}`);
+    } catch (error) {
+        console.error('[ONEDRIVE] Deletion error:', error.message);
+        throw error;
+    }
+};
+
+module.exports = { uploadToOneDrive, testOneDriveConnection, deleteFromOneDrive };
