@@ -1,0 +1,1093 @@
+
+
+Bulletproof Automation QA | Client Report | Confidential
+Page1
+QUALITY ASSURANCE EVALUATION
+n8n Backup Manager
+Client Report Package
+Bulletproof Automation QA
+Do not just build automations. Prove they work.
+FieldValue
+Prepared forClient Review - Confidential
+Evaluation date11 May 2026
+Repository reviewedgithub.com/aleksnero/n8n-backup-manager
+Overall verdictNot Ready for Business-Critical SQLite Use
+Readiness score13 / 50
+Report typeSnapshot + Team Evidence Reports
+
+Bulletproof Automation QA | Client Report | Confidential
+Page2
+Confidentiality and Use Notice
+This report is prepared for client review and decision support. It summarizes the QA readiness evaluation of n8n Backup Manager
+in a controlled, isolated Docker-based QA environment. No production data was accessed, and non-QA containers were not
+modified during the documented testing.
+The report should be read as a readiness and risk assessment, not as a full security audit, full penetration test, legal review, or
+production deployment certification. The recommendations are based on the evidence captured in the QA report package and
+should be retested after remediation.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page3
+TableofContents
+Confidentiality and Use Notice.............................................................................................................................................................2
+Table of Contents................................................................................................................................................................................3
+1. Executive Snapshot.........................................................................................................................................................................4
+2. QA Engagement Team....................................................................................................................................................................5
+3. Engagement Context and Scope.....................................................................................................................................................7
+4. Testing Methodology.......................................................................................................................................................................8
+5. Bulletproof Readiness Scorecard....................................................................................................................................................8
+6. Key Findings Register......................................................................................................................................................................9
+7. Functional Test Summary................................................................................................................................................................9
+8. Remediation Roadmap....................................................................................................................................................................9
+9. Team Evidence Reports................................................................................................................................................................11
+10. Evidence File Index.....................................................................................................................................................................18
+11. Source Documents and Retention Notes....................................................................................................................................20
+
+Bulletproof Automation QA | Client Report | Confidential
+Page4
+MAIN REPORT
+1. Executive Snapshot
+Overall conclusion:n8n Backup Manager is not ready to serve as the sole backup and recovery mechanism for live, client-
+facing, or business-critical SQLite-backed n8n deployments.
+The application has a working foundation and several happy-path functions performed as expected. However, the core trust
+guarantee - that a successful backup is recoverable and that a successful restore produces accessible data - was not proven
+reliable in the tested SQLite scenarios.
+The most serious issues are not cosmetic or minor. The application can produce misleading success states for backup and
+restore. A user could believe they have a valid backup or completed restore, while the actual recoverable workflow data is
+missing, stale, or hidden by WAL/SHM state.
+Executive AreaAssessment
+Overall QA RatingD - High Risk
+Production ReadinessNot Ready for Business-Critical SQLite Use
+Core Risk ThemeSuccessful responses do not consistently prove recoverable backup or visible restored data.
+Immediate Decision
+Do not rely on this tool as the sole DR mechanism until P0/P1 fixes are completed and
+independently retested.
+Retest Requirement
+Clean-target backup/restore validation with artifact inspection and post-restore content
+verification.
+What works well
+• The application starts in Docker and can be configured in a disposable QA sandbox.
+• Authentication, local settings persistence, metadata display, scheduled backup success, retention, protected backups, delete
+behavior, compression, encryption artifact creation/decryption, and missing-container failure handling had passing results in selected
+core functional tests.
+• The atomic SQLite backup path can create a complete artifact when sqlite3 is present inside the source n8n container.
+Why the verdict remains high risk
+• The fallback backup path can create a successful-looking artifact that omits WAL-resident workflow data.
+• The application does not validate sqlite3 availability before backup, even though that prerequisite changes whether backup behavior is
+safe.
+• Restore behavior does not safely manage target WAL/SHM state or process lifecycle, so a complete restored base database can still
+fail to show expected workflows after startup.
+• Integrity checks and misconfiguration handling do not yet prove recoverability.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page5
+REVIEW MODEL
+2. QA Engagement Team
+This evaluation uses a structured QA review model. Each report area is assigned to a role so the final client package covers
+functional behavior, backup integrity, restore reliability, environment readiness, operational safety, business impact, and evidence
+traceability.
+Johnathan Lightfoot
+Role:Engagement Director / Executive QA Reviewer
+Review responsibility:Executive oversight, business-risk interpretation, production-readiness judgment, and final report review.
+Education / training: U.S. Navy operational and technical training; long-form professional learning across IT operations, systems
+integration, automation strategy, and client-facing technology delivery. Experience: U.S. Navy veteran, IT leader, President of Symbiont,
+Inc., founder-level operator, and long-term technology consultant focused on whether systems can be trusted in real business conditions.
+Ama Serwaa Boateng
+Role:QA Test Lead
+Review responsibility:Functional QA planning, happy-path testing, failure-path testing, edge-case review, and test result
+classification.
+Role profile: BSc-level Computer Science or Software Engineering training with practical experience in software QA, test case design,
+acceptance testing, workflow validation, and pass/fail evidence review.
+Kojo Mensah
+Role:Backup & Recovery Integrity Analyst
+Review responsibility:Backup completeness, restore reliability, SQLite behavior, WAL/SHM lifecycle handling, and disaster
+recovery trustworthiness.
+Role profile: BSc-level Information Technology or Computer Engineering training with hands-on experience in database operations,
+backup validation, Docker-based systems, SQLite/PostgreSQL recovery patterns, and disaster recovery testing.
+Aminata Diallo
+Role:Systems & Environment Analyst
+Review responsibility:Docker configuration, sandbox isolation, runtime prerequisites, application setup, and repeatability of the
+QA environment.
+Role profile: MSc-level Information Systems training with experience in Linux environments, containerized applications, configuration
+review, cloud-hosted applications, and deployment readiness.
+Tunde Adeyemi
+Role:Operational Safety Reviewer
+Review responsibility:Logging, alerting, unsafe success states, failure visibility, prerequisite validation, and operational
+readiness concerns.
+Role profile: BEng-level Computer Engineering training with experience in systems operations, production support, incident response,
+API-driven applications, monitoring patterns, and operational risk controls.
+Esi Nyarko
+Role:Evidence & Documentation Lead
+Review responsibility:Evidence trail, proof ledger, findings register organization, source report conversion, and continuity
+documentation.
+Role profile: BA-level Technical Communication training with experience in QA documentation, audit-support reporting, evidence
+management, technical writing, and client-facing documentation.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page6
+Mariama Kamara
+Role:Risk & Business Impact Analyst
+Review responsibility:Severity rating, business impact translation, remediation priority, and executive decision language.
+Role profile: MBA-level Technology Management training with experience in business analysis, technology governance, service delivery,
+operational risk assessment, and remediation planning.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page7
+EVALUATION FRAMING
+3. Engagement Context and Scope
+The evaluated use case is a Docker-based n8n environment using SQLite, with potential personal, client-facing, and business-
+critical workflows. The central question was simple: can the client trust that a successful backup means data is safe, and that a
+successful restore means workflows are actually back?
+In scope
+• Repository baseline review and application purpose analysis.
+• Docker sandbox capability and isolated setup validation.
+• Local backup behavior and SQLite artifact inspection.
+• Same-target and clean-target restore behavior.
+• sqlite3-enabled atomic backup path.
+• SQLite WAL/SHM restore lifecycle behavior.
+• Selected core application features including scheduling, retention, compression, encryption, integrity checks, metadata, and error
+handling.
+• Findings, risk classification, readiness scoring, and remediation roadmap.
+Out of scope for this phase
+• Full penetration test or security audit.
+• Production deployment hardening.
+• Source code remediation or implementation work.
+• Full retesting of Google Drive, S3, OneDrive, Telegram, or long-term cloud storage integrations.
+• Long-term performance, stability, or uptime monitoring.
+• Legal, regulatory, or compliance certification.
+Cloud storage was intentionally deferred. Uploading an incomplete or unrecoverable local backup artifact to the cloud does not
+create meaningful recovery protection. Local artifact correctness and restore correctness must be proven first.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page8
+HOW THE CONCLUSION WAS REACHED
+4. Testing Methodology
+• Established a repository baseline and identified architectural areas relevant to backup and restore trust.
+• Confirmed that disposable Docker-based QA resources could be used safely and repeatably.
+• Created isolated QA n8n and Backup Manager containers using local-only ports and dedicated sandbox folders.
+• Created test workflow data and performed manual local backup smoke testing.
+• Inspected SQLite artifacts directly using disposable helper containers.
+• Compared live SQLite state against extracted backup databases.
+• Performed same-target restore, clean-target restore, sqlite3-enabled atomic backup testing, and WAL/SHM restore lifecycle analysis.
+• Ran a selected core functional test suite covering additional local features and failure behavior.
+• Converted raw QA results into a findings register, risk classification, readiness score, and remediation roadmap.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page9
+SCORING
+5. Bulletproof Readiness Scorecard
+The readiness score is intentionally conservative because the highest-risk failures are located in the product areas that matter
+most: backup completeness, restore reliability, failure signaling, and operational safety.
+Evaluation CategoryScoreStatus
+Installation Readiness3 / 5Partially acceptable
+Configuration Readiness2 / 5Needs hardening
+Local Backup Reliability2 / 5Needs hardening
+SQLite Backup Reliability1 / 5High risk
+SQLite Restore Reliability1 / 5High risk
+Error and Failure Handling1 / 5High risk
+Logging and Observability2 / 5Needs hardening
+Documentation Readiness2 / 5Needs hardening
+Operational Safety1 / 5High risk
+Business-Critical Suitability0 / 5Not suitable
+TOTAL13 / 50D - High Risk
+Scoring scale: 0-10 Unsafe / 11-20 High Risk / 21-35 Needs Hardening / 36-44 Conditionally Ready / 45-50 Production Ready.
+Risk map
+
+Bulletproof Automation QA | Client Report | Confidential
+Page10
+FINDINGS
+6. Key Findings Register
+The findings below are the main evidence-backed issues driving the final readiness decision. P0 findings must be remediated
+before business-critical use. P1 findings should be remediated before wider use or client reliance.
+IDFindingSeverityPriorityStatusAreaBusiness Impact
+APP-FIND-001
+SQLite backup
+fallback created a
+successful-looking
+backup that omitted
+WAL-resident
+workflow data
+CriticalP0
+Confirmed
+SQLite backup
+fallback path
+A successful
+backup message
+may create false
+confidence while
+recent workflow
+data is not present
+in the artifact.
+APP-FIND-002
+SQLite backup
+success depends
+on sqlite3 being
+installed in the
+source n8n
+container, but the
+application does not
+validate that
+prerequisite
+HighP1
+Supported
+SQLite prerequisite
+validation
+Users may run
+unsupported or
+unsafe backup
+paths without being
+warned before
+backup execution.
+APP-FIND-003
+SQLite restore does
+not safely manage
+WAL/SHM state or
+target process
+lifecycle
+CriticalP0
+ConfirmedSQLite restore path
+A successful restore
+response may not
+result in visible
+recovered
+workflows after
+startup.
+APP-FIND-004
+Backup integrity
+check does not
+validate
+recoverability and
+can return
+misleading results
+HighP1
+SupportedIntegrity validation
+Integrity checks can
+appear to pass
+without proving the
+backup can restore
+expected n8n data.
+APP-FIND-005
+Invalid SQLite
+db_path can create
+a successful backup
+record containing
+an empty non-n8n
+SQLite database
+CriticalP0
+Supported
+SQLite path
+validation
+A misconfigured
+path can produce a
+successful backup
+record that does not
+protect the actual
+n8n database.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page11
+CORE APP TESTING
+7. Functional Test Summary
+Passed areasFailed areasPartial areas
+• Settings persistence
+• Manual sqlite3 local backup
+• Backup metadata
+• Atomic backup logs
+• Scheduled backup success
+• Retention behavior
+• Protected backups
+• Delete behavior
+• Compression
+• Encryption artifact creation/decryption
+• Missing container failure handling
+• Corrupted/truncated backup integrity detection
+• Invalid SQLite db_path failure handling
+• Scheduled failure visibility
+• Integrity check scope
+• Encrypted integrity behavior
+• Missing encryption key error clarity
+Passing local features do not overcome failures in backup correctness, restore correctness, and misleading success states. For
+this product category, recovery trust is the center of gravity.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page12
+ACTION PLAN
+8. Remediation Roadmap
+Fix Now - P0 / Critical
+• Remove or block unsafe direct-copy fallback for live SQLite WAL databases.
+• Fail backup loudly when atomic SQLite backup cannot run.
+• Safely manage SQLite WAL/SHM files and target process lifecycle during restore.
+• Validate SQLite db_path and reject backups that target an empty or non-n8n database.
+• Add clean-target restore validation as a required release test.
+Fix Next - P1 / High
+• Add sqlite3 prerequisite validation and surface readiness in the UI/API.
+• Upgrade integrity checks so they prove recoverability, not just readability.
+• Improve error messages around encrypted backups, missing keys, and scheduled failures.
+• Document supported SQLite backup modes and prerequisites clearly.
+Improve Later - Operational Maturity
+• Add automated test coverage for happy path, failure path, and restore verification.
+• Add structured logs and recovery-oriented events.
+• Add cloud-storage retesting after local artifact correctness is proven.
+• Add release readiness gates for backup artifact inspection and clean-target restore validation.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page13
+APPENDIX PACKAGE
+9. Team Evidence Reports
+The following sections are the formal team reports. Each section identifies the assigned role, the source report, the decision, the
+purpose, the scope, the key observations, and the QA conclusion.
+9.1 System Baseline Review Report
+Report FieldDetails
+Prepared byAminata Diallo - Systems & Environment Analyst
+Reviewed byJohnathan Lightfoot
+Source materialQA_READINESS_BASELINE(1).md
+Summary decisionBASELINE REVIEW COMPLETED
+Purpose
+Establish the application purpose, architecture, runtime stack, Docker setup, storage model, integration surface, documentation strengths,
+documentation gaps, and initial QA concerns before functional testing.
+Scope Covered
+• Repository structure and local clone review
+• Backend and frontend technology stack
+• Docker and environment variable approach
+• Backup/restore modules and cloud integration surface
+• Documentation strengths, gaps, and initial QA concerns
+Key Observations
+• The application is a self-hosted web application for backing up and restoring Docker-based n8n deployments using SQLite or PostgreSQL.
+• The stack includes Node.js/Express, React/Vite, SQLite/Sequelize, Dockerode, archive/compression/encryption libraries, cloud storage
+helpers, and Telegram notification support.
+• The baseline identified a meaningful product surface, but also highlighted documentation and test coverage gaps requiring controlled QA
+execution.
+QA Conclusion
+The repository has a coherent architecture and addresses a real operational need, but baseline review alone could not establish backup
+or restore trust. Functional and recovery validation were required before any production-readiness claim.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page14
+9.2 Sandbox Capability & Isolation Report
+Report FieldDetails
+Prepared byAminata Diallo - Systems & Environment Analyst
+Reviewed byJohnathan Lightfoot
+Source materialSANDBOX_CAPABILITY_CHECK(3).md
+Summary decisionFULL_DOCKER_SANDBOX_POSSIBLE
+Purpose
+Confirm that disposable Docker-based QA testing could be run safely without touching non-QA containers or production-like resources.
+Scope Covered
+• Docker CLI and daemon access
+• Container execution and image pull capability
+• Port publishing and bind mount capability
+• Docker socket mounting
+• Docker Compose service creation
+• Tool availability including git, node, npm, Docker, curl, jq, and sqlite3
+Key Observations
+• Docker CLI, daemon access, container execution, image pull, port publishing, bind mounts, Docker socket mounting, and Compose service
+creation worked when Docker daemon access was approved.
+• Non-elevated Docker daemon calls failed with permission errors, which was treated as an environment caveat rather than an application
+finding.
+• Host sqlite3 and jq were not available, so SQLite inspection later used disposable helper containers rather than host tooling.
+QA Conclusion
+A full disposable QA sandbox was feasible. This supported repeatable, isolated testing of backup and restore behavior without modifying
+non-QA containers.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page15
+9.3 Initial Functional Smoke Test Report
+Report FieldDetails
+Prepared byAma Serwaa Boateng - QA Test Lead
+Reviewed byJohnathan Lightfoot
+Source materialQA_SMOKE_SANDBOX_SETUP_REPORT(1).md
+Summary decisionQA_SANDBOX_READY
+Purpose
+Confirm that the Backup Manager application and a disposable n8n target could be started, configured, authenticated, and used for an
+initial local backup smoke test.
+Scope Covered
+• Disposable n8n QA instance
+• Disposable Backup Manager app instance
+• First-run setup and authentication
+• Local backup configuration
+• Initial test workflow import
+• Manual local backup creation
+Key Observations
+• The QA environment started successfully with n8n at 127.0.0.1:15678 and Backup Manager at 127.0.0.1:13000.
+• One manual local backup was created successfully and the backup file was present and non-empty.
+• A major follow-up concern was observed: the target n8n container did not include sqlite3, causing Backup Manager to fall back from atomic
+SQLite backup to direct file copy. The resulting archive contained only database.sqlite while live n8n data also had active WAL/SHM files.
+QA Conclusion
+The application passed initial smoke setup, but the backup mechanism immediately raised a high-value QA concern requiring artifact
+integrity analysis.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page16
+9.4 SQLite Backup Artifact Integrity Report
+Report FieldDetails
+Prepared byKojo Mensah - Backup & Recovery Integrity Analyst
+Reviewed byJohnathan Lightfoot
+Source materialSQLITE_BACKUP_ARTIFACT_QUALITY(1).md
+Summary decisionBACKUP_ARTIFACT_INCOMPLETE
+Purpose
+Determine whether the successful-looking backup artifact contained the live n8n workflow data expected for recovery.
+Scope Covered
+• Live SQLite file state
+• Backup tar/archive inspection
+• WAL/SHM presence and impact
+• SQLite readability and query results
+• Live vs backup workflow count comparison
+Key Observations
+• The live copied database with database.sqlite-wal and database.sqlite-shm present contained the disposable QA Smoke Workflow.
+• The extracted backup archive contained only database.sqlite and the extracted backup database contained zero workflows.
+• n8n was running in WAL mode, WAL/SHM files were present and non-empty, and the application had fallen back to direct file copy after sqlite3
+was unavailable in the target container.
+QA Conclusion
+The backup artifact was readable but incomplete for the observed live SQLite state. This confirmed APP-FIND-001 as a critical backup
+reliability and data-loss risk.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page17
+9.5 Same-Target Restore Behavior Report
+Report FieldDetails
+Prepared byKojo Mensah - Backup & Recovery Integrity Analyst
+Reviewed byJohnathan Lightfoot
+Source materialRESTORE_IMPACT_TEST(2).md
+Summary decisionRESTORE_COMPLETED_NO_DATA_LOSS_OBSERVED
+Purpose
+Assess whether restoring the incomplete artifact into the same running QA target caused observable data loss or changed workflow
+visibility.
+Scope Covered
+• Backup metadata confirmation
+• Restore API execution
+• Post-restore n8n behavior
+• Database state before and after restore
+• Manual restart of only the QA n8n container
+Key Observations
+• Backup Manager restored backup ID 1 and returned HTTP 200 OK with the message Backup restored successfully.
+• The QA Smoke Workflow was present before restore and remained present after restore and after a manual restart.
+• This did not clear the incomplete artifact finding because existing target database.sqlite-wal and database.sqlite-shm files remained in place
+and masked the incomplete restored base database.
+QA Conclusion
+Same-target restore did not show immediate data loss, but the result exposed an additional restore-integrity risk: success could be
+reported while stale WAL/SHM state determined what data remained visible.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page18
+9.6 Clean-Target Recovery Validation Report
+Report FieldDetails
+Prepared byKojo Mensah - Backup & Recovery Integrity Analyst
+Reviewed byJohnathan Lightfoot
+Source materialCLEAN_TARGET_RESTORE_TEST(1).md
+Summary decisionCLEAN_TARGET_RESTORE_CONFIRMED_DATA_LOSS
+Purpose
+Test the recovery value of the backup artifact by restoring it into a fresh disposable n8n SQLite target with no prior state from the original
+QA instance.
+Scope Covered
+• Clean target setup
+• Pre-restore workflow count
+• Backup Manager settings change
+• Restore execution
+• Post-restore and post-restart SQLite queries
+Key Observations
+• The clean target started with workflow count 0.
+• The restore API returned success, but workflow count remained 0 after restore.
+• After restarting the clean target, workflow count still remained 0 and the QA Smoke Workflow was not recovered.
+QA Conclusion
+Clean-target restore confirmed that the successful-looking fallback backup artifact did not recover the expected workflow. This made APP-
+FIND-001 a confirmed critical finding.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page19
+9.7 Atomic SQLite Backup Path Report
+Report FieldDetails
+Prepared byKojo Mensah - Backup & Recovery Integrity Analyst
+Reviewed byJohnathan Lightfoot
+Source materialSQLITE3_ATOMIC_BACKUP_TEST_REPORT(1).md
+Summary decisionSQLITE3_ATOMIC_PATH_CONFIRMED_COMPLETE
+Purpose
+Test whether adding sqlite3 to the source n8n container allowed Backup Manager to create a complete atomic SQLite backup artifact.
+Scope Covered
+• Custom sqlite3-enabled n8n source image
+• Atomic backup execution
+• Backup Manager log review
+• Backup artifact inspection
+• Clean-target restore behavior from complete artifact
+Key Observations
+• Backup Manager logged Successfully created atomic SQLite backup copy.
+• The artifact query returned workflow_count = 1 and confirmed QA SQLite3 Atomic Backup Workflow was present.
+• Clean target restore query after restore and after restart still showed workflow_count = 0, suggesting a separate restore/WAL handling issue
+even when the artifact was complete.
+QA Conclusion
+The sqlite3-enabled atomic path can create a complete artifact. However, the application does not validate this prerequisite before
+backup, and complete artifact creation does not resolve the restore lifecycle issue.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page20
+9.8 SQLite WAL/SHM Restore Lifecycle Report
+Report FieldDetails
+Prepared byKojo Mensah - Backup & Recovery Integrity Analyst
+Reviewed byJohnathan Lightfoot
+Source materialRESTORE_WAL_HANDLING_TEST_REPORT(1).md
+Summary decisionRESTORE_WAL_HANDLING_ISSUE_CONFIRMED
+Purpose
+Determine whether Backup Manager safely handles target WAL/SHM files and target process lifecycle during SQLite restore.
+Scope Covered
+• Complete artifact re-verification
+• Restore into stopped target
+• WAL/SHM file handling
+• Post-start workflow visibility
+• Manual offline diagnostic restore with old WAL/SHM removed
+Key Observations
+• The complete artifact was reverified with workflow_count = 1 and the expected workflow present.
+• Backup Manager restore into a stopped target returned success and copied the complete base DB, but did not remove old target
+database.sqlite-wal or database.sqlite-shm.
+• After starting the target, visible workflow_count remained 0. Manual offline diagnostic restore with old WAL/SHM removed showed
+workflow_count = 1 after startup.
+QA Conclusion
+APP-FIND-003 was confirmed at critical severity. SQLite restore must safely manage WAL/SHM state and target lifecycle before the
+restore success message can be trusted.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page21
+9.9 Core Application Functional QA Report
+Report FieldDetails
+Prepared byAma Serwaa Boateng - QA Test Lead
+Reviewed byJohnathan Lightfoot
+Source materialCORE_APP_FUNCTIONAL_TEST_SUITE_REPORT(1).md
+Summary decisionCORE_APP_TESTING_COMPLETED
+Purpose
+Test selected local application features beyond the initial SQLite backup and restore investigation.
+Scope Covered
+• Settings persistence
+• Manual sqlite3 local backup
+• Metadata display
+• Atomic-backup logs
+• Scheduled backup success
+• Retention and protected backups
+• Compression and encryption artifact creation/decryption
+• Failure handling for missing container and invalid/corrupt backup cases
+Key Observations
+• Passed areas included settings persistence, manual sqlite3 local backup, metadata, atomic-backup logs, scheduled backup success,
+retention, protected backups, delete behavior, compression, encryption artifact creation/decryption, and missing container failure.
+• Failed areas included corrupted/truncated backup integrity detection and invalid SQLite db_path failure handling.
+• Partial areas included scheduled failure visibility, integrity check scope, encrypted integrity behavior, and missing encryption key error clarity.
+QA Conclusion
+Core functionality exists and several local features work, but the application still fails key trust and safety expectations for recovery,
+validation, and failure signaling.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page22
+9.10 Findings Register & Risk Classification Report
+Report FieldDetails
+Prepared byMariama Kamara / Esi Nyarko - Risk & Evidence Leads
+Reviewed byJohnathan Lightfoot
+Source materialUPDATED_FINDINGS_REGISTER(1).md
+Summary decisionFINDINGS REGISTER UPDATED
+Purpose
+Consolidate confirmed and supported findings into a client-readable register with severity, status, priority, affected area, evidence
+summary, risk, and recommendation.
+Scope Covered
+• APP-FIND-001 through APP-FIND-005
+• Severity and priority ratings
+• Evidence path mapping
+• Risk language and remediation guidance
+Key Observations
+• The register identifies three P0 items and two P1 items.
+• Critical findings focus on incomplete fallback backup artifacts, unsafe restore lifecycle behavior, and invalid SQLite path success states.
+• High findings focus on missing sqlite3 prerequisite validation and integrity checks that do not prove recoverability.
+QA Conclusion
+The findings register supports a Not Ready for Business-Critical SQLite Use classification and gives a concrete remediation sequence.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page23
+9.11 QA Handoff & Continuity Report
+Report FieldDetails
+Prepared byEsi Nyarko - Evidence & Documentation Lead
+Reviewed byJohnathan Lightfoot
+Source material
+MASTER_QA_HANDOFF_REPORT_UPDATED(1).md and QA_CONTINUITY_CHECK_2026-05-
+11_085419_UTC(1).md
+Summary decisionCONTINUITY_CONFIRMED / NOT READY FOR BUSINESS-CRITICAL SQLITE USE
+Purpose
+Preserve the testing trail, environment state, completed reports, open work, evidence folders, and continuity status for future testing or
+retesting.
+Scope Covered
+• Repository and QA workspace paths
+• Completed reports and evidence roots
+• Docker and container state
+• Confirmed findings
+• Remaining tests and Google Drive retesting decision
+Key Observations
+• The updated handoff classified the current status as Not Ready For Business-Critical SQLite Use.
+• The continuity check confirmed the QA handoff directory, source repository, master handoff report, Docker engine, QA containers, QA
+network, sandbox folders, and prior evidence folders were present and accessible.
+• No functional QA test was run during the continuity check.
+QA Conclusion
+The evidence trail is stable enough to support this consolidated client report and future remediation/retest work.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page24
+9.12 Consolidated Risk & Remediation Report
+Report FieldDetails
+Prepared byMariama Kamara - Risk & Business Impact Analyst
+Reviewed byJohnathan Lightfoot
+Source material
+CONSOLIDATED_QA_FINDINGS_RISK_PACKAGE_DRAFT(1).md and
+QA_READINESS_EVALUATION_REPORT_DRAFT(1).md
+Summary decisionNOT READY FOR BUSINESS-CRITICAL SQLITE USE
+Purpose
+Translate technical findings into executive risk, readiness score, remediation sequence, and final decision language.
+Scope Covered
+• Executive summary
+• Findings register
+• Risk register
+• Readiness score
+• Remediation roadmap
+• Final recommendation
+Key Observations
+• The final readiness score was set at 13 / 50.
+• The classification remained Not Ready For Business-Critical SQLite Use.
+• The recommended next step was to remediate P0 findings first, then retest clean-target backup and restore behavior with explicit artifact and
+post-restore content validation.
+QA Conclusion
+The business decision is clear: the application has useful foundations, but cannot be trusted as the sole backup and recovery mechanism
+for live SQLite-backed n8n environments until critical findings are fixed and independently retested.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page25
+TRACEABILITY
+10. Evidence File Index
+This index records the major source report files and key evidence paths referenced by the QA evaluation. The original evidence
+was produced under the local QA workspace and should be preserved with the engagement folder for retesting, audit support, or
+remediation review.
+10.1 Source report files provided for consolidation
+Source FileHow Used in Client Report
+CLEAN_TARGET_RESTORE_TEST(1).mdConverted into Clean-Target Recovery Validation Report.
+CONSOLIDATED_QA_FINDINGS_RISK_PACKAGE_DRAFT(1).md
+Used for final executive assessment, risk register, remediation roadmap, and
+score.
+CORE_APP_FUNCTIONAL_TEST_SUITE_REPORT(1).mdConverted into Core Application Functional QA Report.
+MASTER_QA_HANDOFF_REPORT(1).mdUsed for handoff, continuity, environment, and evidence-trail sections.
+MASTER_QA_HANDOFF_REPORT_UPDATED(1).mdUsed for handoff, continuity, environment, and evidence-trail sections.
+QA_CONTINUITY_CHECK_2026-05-11_085419_UTC(1).mdUsed for handoff, continuity, environment, and evidence-trail sections.
+QA_READINESS_BASELINE(1).mdConverted into System Baseline Review Report.
+QA_READINESS_EVALUATION_REPORT_DRAFT(1).md
+Used for final executive assessment, risk register, remediation roadmap, and
+score.
+QA_SMOKE_SANDBOX_SETUP_REPORT(1).mdConverted into Initial Functional Smoke Test Report.
+RESTORE_IMPACT_TEST(2).mdConverted into Same-Target Restore Behavior Report.
+RESTORE_WAL_HANDLING_TEST_REPORT(1).mdConverted into SQLite WAL/SHM Restore Lifecycle Report.
+SANDBOX_CAPABILITY_CHECK(3).mdConverted into Sandbox Capability & Isolation Report.
+SQLITE3_ATOMIC_BACKUP_TEST_REPORT(1).mdConverted into Atomic SQLite Backup Path Report.
+SQLITE_BACKUP_ARTIFACT_QUALITY(1).mdConverted into SQLite Backup Artifact Integrity Report.
+UPDATED_FINDINGS_REGISTER(1).mdUsed for findings register and evidence traceability.
+n8n_Backup_Manager_QA_Report_2026-05-11.docx
+Used for final executive assessment, risk register, remediation roadmap, and
+score.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page26
+10.2 Key evidence paths and artifacts
+The list below emphasizes the evidence items most directly connected to the final readiness conclusion. It is not intended to
+replace the original QA evidence folder.
+Evidence AreaPath / FileUse
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+docker\01-docker-ps-all-before.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+docker\02-docker-ps-qa-before.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+docker\03-port-15679-check.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+16-settings-before-update.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+17-settings-before-update.json
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+docker\04-cleanrestore-folder-before.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+docker\06-cleanrestore-docker-run.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+docker\07-cleanrestore-docker-ps-started.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\logs
+\08-cleanrestore-initial.log
+Runtime log supporting observed behavior.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+09-cleanrestore-http-initial.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+database-before-restore\10-cleanrestore-data-files-before-restore.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+database-before-restore
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\
+clean-target-restore-test:/work
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+database-before-restore\11-before-restore-files.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+database-before-restore\12-before-restore-hashes.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+queries\13-before-restore-query.txt
+SQLite query output supporting workflow
+count or artifact verification.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+queries\cleanrestore_sqlite_checks.sh
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+settings-cleanrestore-target.json
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+14-login-response.json
+Runtime log supporting observed behavior.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+15-token.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+18-settings-update-cleanrestore-response.txt
+API response evidence supporting reported
+success/failure state.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+19-settings-after-cleanrestore-update.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+20-status-cleanrestore-target.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+backup-artifacts\backup-2026-05-11T08-11-02-040Z.tar
+Backup artifact used for integrity or restore
+validation.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+21-backups-list-before-cleanrestore.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+backup-artifacts\22-backup-artifact-hash.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+backup-artifacts\23-backup-artifact-tar-listing.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+25-cleanrestore-restore-response.txt
+API response evidence supporting reported
+success/failure state.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\logs
+\27-backup-manager-after-cleanrestore.log
+Runtime log supporting observed behavior.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+docker\26-docker-ps-qa-after-restore.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\logs
+\28-cleanrestore-n8n-after-restore.log
+Runtime log supporting observed behavior.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+29-cleanrestore-http-after-restore.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+database-after-restore
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+database-after-restore\30-after-restore-files.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+database-after-restore\31-after-restore-hashes.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+queries\32-after-restore-query.txt
+SQLite query output supporting workflow
+count or artifact verification.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page27
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+docker\33-cleanrestore-restart-after-restore.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+docker\34-docker-ps-after-cleanrestore-restart.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+35-cleanrestore-http-after-restart.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\logs
+\36-cleanrestore-n8n-after-restart.log
+Runtime log supporting observed behavior.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+database-after-restart\37-after-restart-files.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+database-after-restart\38-after-restart-hashes.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+queries\39-after-restart-query.txt
+SQLite query output supporting workflow
+count or artifact verification.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+docker\43-final-qa-docker-ps.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+40-settings-restore-original-response.txt
+API response evidence supporting reported
+success/failure state.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+41-settings-after-restore-original.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\
+database-after-restart
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Clean-target restore
+D:\Projects\n8n_Backup_Manager\evidence\clean-target-restore-test\api\
+42-status-after-settings-restore.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+QA evidence
+D:\Projects\n8n_Backup_Manager\SQLITE_BACKUP_ARTIFACT_QUALITY.md
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+QA evidence
+D:\Projects\n8n_Backup_Manager\CLEAN_TARGET_RESTORE_TEST.md
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+SQLite artifact quality
+D:\Projects\n8n_Backup_Manager\evidence\sqlite-artifact-quality\
+queries\15-sqlite-query-live-vs-backup.txt
+SQLite query output supporting workflow
+count or artifact verification.
+SQLite artifact quality
+D:\Projects\n8n_Backup_Manager\evidence\sqlite-artifact-quality\
+queries\17-sqlite-control-checks.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+QA evidence
+D:\Projects\n8n_Backup_Manager\reports\SQLITE3_ATOMIC_BACKUP_TEST.md
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Atomic SQLite path
+D:\Projects\n8n_Backup_Manager\evidence\sqlite3-atomic-backup-test\
+queries\75-backup-artifact-query.txt
+SQLite query output supporting workflow
+count or artifact verification.
+QA evidence
+D:\Projects\n8n_Backup_Manager\reports\RESTORE_WAL_HANDLING_TEST.md
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+WAL/SHM restore lifecycle
+D:\Projects\n8n_Backup_Manager\evidence\restore-wal-handling-test\
+queries\10-complete-artifact-query.txt
+SQLite query output supporting workflow
+count or artifact verification.
+WAL/SHM restore lifecycle
+D:\Projects\n8n_Backup_Manager\evidence\restore-wal-handling-test\
+queries\53-bm-stopped-restore-after-start-query.txt
+SQLite query output supporting workflow
+count or artifact verification.
+WAL/SHM restore lifecycle
+D:\Projects\n8n_Backup_Manager\evidence\restore-wal-handling-test\
+queries\66-manual-offline-after-start-query.txt
+SQLite query output supporting workflow
+count or artifact verification.
+WAL/SHM restore lifecycle
+D:\Projects\n8n_Backup_Manager\evidence\restore-wal-handling-test\api\
+41-stopped-target-restore-response.txt
+API response evidence supporting reported
+success/failure state.
+WAL/SHM restore lifecycle
+D:\Projects\n8n_Backup_Manager\evidence\restore-wal-handling-test\logs
+\42-backup-manager-after-stopped-restore.log
+Runtime log supporting observed behavior.
+QA evidence
+D:\Projects\n8n_Backup_Manager\reports\
+CORE_APP_FUNCTIONAL_TEST_SUITE.md
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Core functional suite
+D:\Projects\n8n_Backup_Manager\evidence\core-app-functional-suite
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Report source
+D:\Projects\n8n_Backup_Manager\MASTER_QA_HANDOFF_REPORT.md
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Report source
+D:\Projects\n8n_Backup_Manager\QA_READINESS_BASELINE.md
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+QA evidence
+D:\Projects\n8n_Backup_Manager\RESTORE_IMPACT_TEST.md
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+SQLite artifact quality
+D:\Projects\n8n_Backup_Manager\evidence\sqlite-artifact-quality
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+QA evidence
+D:\Projects\n8n_Backup_Manager\sandbox\backup-files\
+backup-2026-05-11T08-11-02-040Z.tar
+Backup artifact used for integrity or restore
+validation.
+WAL/SHM restore lifecycle
+D:\Projects\n8n_Backup_Manager\evidence\restore-wal-handling-test\
+queries\15-prior-failed-cleanrestore-current-query.txt
+SQLite query output supporting workflow
+count or artifact verification.
+WAL/SHM restore lifecycle
+D:\Projects\n8n_Backup_Manager\evidence\restore-wal-handling-test\
+stopped-clean-target-after\
+44-files-after-bm-restore-while-stopped-before-start.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+WAL/SHM restore lifecycle
+D:\Projects\n8n_Backup_Manager\evidence\restore-wal-handling-test\
+queries\46-bm-stopped-restore-before-start-base-only-query.txt
+SQLite query output supporting workflow
+count or artifact verification.
+WAL/SHM restore lifecycle
+D:\Projects\n8n_Backup_Manager\evidence\restore-wal-handling-test
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Atomic SQLite path
+D:\Projects\n8n_Backup_Manager\evidence\sqlite3-atomic-backup-test\
+backup-artifacts\backup-2026-05-11T09-09-14-718Z.tar
+Backup artifact used for integrity or restore
+validation.
+Report source
+D:\Projects\n8n_Backup_Manager\
+CONSOLIDATED_QA_FINDINGS_RISK_PACKAGE_DRAFT.md
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Report source
+D:\Projects\n8n_Backup_Manager\MASTER_QA_HANDOFF_REPORT_UPDATED.md
+Supports finding, test result, environment
+
+Bulletproof Automation QA | Client Report | Confidential
+Page28
+state, artifact inspection, or retest traceability.
+QA evidence
+D:\Projects\n8n_Backup_Manager\SQLITE3_ATOMIC_BACKUP_TEST_REPORT.md
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+QA evidence
+D:\Projects\n8n_Backup_Manager\RESTORE_WAL_HANDLING_TEST_REPORT.md
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+Same-target restore
+D:\Projects\n8n_Backup_Manager\evidence\restore-impact-test\
+backup-artifacts\backup-2026-05-11T08-11-02-040Z.tar
+Backup artifact used for integrity or restore
+validation.
+QA evidence
+D:\Projects\n8n_Backup_Manager\evidence\backup-files\
+backup-2026-05-11T08-11-02-040Z.tar
+Backup artifact used for integrity or restore
+validation.
+SQLite artifact quality
+D:\Projects\n8n_Backup_Manager\evidence\sqlite-artifact-quality\docker
+\01-docker-ps-all.txt
+Supports finding, test result, environment
+state, artifact inspection, or retest traceability.
+
+Bulletproof Automation QA | Client Report | Confidential
+Page29
+CLOSEOUT
+11. Source Documents and Retention Notes
+The source materials should be retained with the engagement record. If the application owner remediates the issues, the original
+report and evidence index should be used to design the retest package.
+Recommended retest package
+• Preflight validation of sqlite3 availability and supported SQLite backup mode.
+• Backup creation test where sqlite3 is absent - expected result should be a loud failure, not a successful fallback.
+• Backup creation test where sqlite3 is present - expected result should be a complete artifact with expected workflow data.
+• Clean-target restore test from a complete artifact - expected result should show the restored workflow after target startup.
+• WAL/SHM handling test - expected result should prove old target WAL/SHM does not override restored base database.
+• Invalid db_path test - expected result should be failure with clear message, not a successful backup record.
+• Integrity check test - expected result should prove restore-readiness rather than just archive/database readability.
+Final client decision
+Do not approven8n Backup Manager as the sole backup and recovery mechanism for business-critical SQLite-backed n8n
+environments until the P0 findings are remediated and independently retested. The application has a promising foundation, but its
+recovery trust guarantee is not yet reliable enough for critical use.
