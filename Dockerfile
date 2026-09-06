@@ -12,8 +12,9 @@ RUN npm run build
 # Setup Backend
 FROM node:18-alpine
 WORKDIR /app
+RUN apk add --no-cache --virtual .build-deps python3 make g++
 COPY server/package*.json ./
-RUN npm install --production
+RUN npm install --production && apk del .build-deps
 COPY server/ ./
 
 # Copy built frontend

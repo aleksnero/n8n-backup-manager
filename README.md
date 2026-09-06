@@ -91,6 +91,9 @@ This app runs on **Linux** (recommended for production) and **Windows/macOS** (f
 
 ## 📸 Screenshots
 
+### Demo Preview
+![n8n Backup Manager Demo](screenshots/demo.gif)
+
 ### Dashboard
 ![Dashboard](screenshots/Dashboard_1.4.1.png)
 *Main dashboard with system status, backup size trend, and quick actions*
@@ -124,29 +127,45 @@ This app runs on **Linux** (recommended for production) and **Windows/macOS** (f
 
 ## 🛠️ Installation
 
-### Quick Start (Linux / VPS — Recommended)
+### Option 1: Quick Start with Pre-built Docker Image (Recommended)
 
-1. **Download the latest release:**
-   ```bash
-   wget https://github.com/aleksnero/n8n-backup-manager/releases/latest/download/release.zip
-   unzip release.zip
-   cd n8n-backup-manager
-   ```
+Run n8n Backup Manager using the official pre-built multi-arch image from GitHub Container Registry (`ghcr.io/aleksnero/n8n-backup-manager`) without compiling dependencies locally:
 
-2. **Start with Docker Compose:**
-   ```bash
-   docker compose up -d
-   ```
+```bash
+# 1. Download docker-compose.yml
+curl -O https://raw.githubusercontent.com/aleksnero/n8n-backup-manager/main/docker-compose.yml
+
+# 2. Pull image and start container
+docker compose pull && docker compose up -d
+```
+
+---
+
+### Option 2: Download Release Archive
+
+```bash
+# 1. Download and extract the latest release
+wget https://github.com/aleksnero/n8n-backup-manager/releases/latest/download/release.zip
+unzip release.zip
+cd n8n-backup-manager
+
+# 2. Start container
+docker compose up -d
+```
 
 > [!NOTE]
-> If you are using a reverse proxy like **Nginx Proxy Manager**, ensure that this container is in the same network, or add the proxy network to the `docker-compose.yml` file. By default, the example above includes `npm_public` network.
+> If you are using a reverse proxy like **Nginx Proxy Manager**, ensure that this container is in the same network, or add the proxy network to the `docker-compose.yml` file. By default, the example includes the `npm_public` network.
 
-3. **Open in Browser:**
+---
+
+### Next Steps
+
+1. **Open in Browser:**
    ```
    http://localhost:3000
    ```
 
-4. **First Time Setup:**
+2. **First Time Setup:**
    - Click "First Time Setup"
    - Create an admin account (username & password)
    - Log in

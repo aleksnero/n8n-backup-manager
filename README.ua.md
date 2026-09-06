@@ -124,29 +124,45 @@
 
 ## 🛠️ Встановлення
 
-### Швидкий старт (Linux / VPS — Рекомендовано)
+### Варіант 1: Швидкий запуск через готовий Docker-образ (Рекомендовано)
 
-1. **Завантажте останній реліз:**
-   ```bash
-   wget https://github.com/aleksnero/n8n-backup-manager/releases/latest/download/release.zip
-   unzip release.zip
-   cd n8n-backup-manager
-   ```
+Запуск n8n Backup Manager за допомогою офіційного мультиплатформеного образу з GitHub Container Registry (`ghcr.io/aleksnero/n8n-backup-manager`) без необхідності локального збирання залежностей:
 
-2. **Запустіть через Docker Compose:**
-   ```bash
-   docker compose up -d
-   ```
+```bash
+# 1. Завантажте docker-compose.yml
+curl -O https://raw.githubusercontent.com/aleksnero/n8n-backup-manager/main/docker-compose.yml
+
+# 2. Завантажте образ та запустіть контейнер
+docker compose pull && docker compose up -d
+```
+
+---
+
+### Варіант 2: Завантаження релізного архіву
+
+```bash
+# 1. Завантажте та розпакуйте реліз
+wget https://github.com/aleksnero/n8n-backup-manager/releases/latest/download/release.zip
+unzip release.zip
+cd n8n-backup-manager
+
+# 2. Запустіть контейнер
+docker compose up -d
+```
 
 > [!NOTE]
 > Якщо ви використовуєте реверс-проксі, як-от **Nginx Proxy Manager**, переконайтеся, що цей контейнер знаходиться в тій самій мережі, або додайте мережу проксі до файлу `docker-compose.yml`. За замовчуванням у прикладі вище додано мережу `npm_public`.
 
-3. **Відкрийте браузер:**
+---
+
+### Наступні кроки після запуску
+
+1. **Відкрийте браузер:**
    ```
    http://localhost:3000
    ```
 
-4. **Перше налаштування:**
+2. **Перше налаштування:**
    - Натисніть "First Time Setup"
    - Створіть адміністратора (логін та пароль)
    - Увійдіть у систему

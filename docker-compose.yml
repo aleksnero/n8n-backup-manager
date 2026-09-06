@@ -1,6 +1,7 @@
 # n8n Backup Manager v1.3.5
 services:
   backup-manager:
+    image: ghcr.io/aleksnero/n8n-backup-manager:latest
     build: .
     container_name: n8n-backup-manager
     restart: unless-stopped
