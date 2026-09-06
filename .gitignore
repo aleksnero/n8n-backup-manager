@@ -43,3 +43,5 @@ coverage/
 tmp/
 temp/
 *.tmp
+report.txt
+readpdf.js
