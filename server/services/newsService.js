@@ -1,6 +1,12 @@
 const fs = require('fs');
 const path = require('path');
-const fetch = require('node-fetch');
+
+// Кросплатформенний fetch (native fetch у Node 18+ або node-fetch як fallback)
+const getFetch = () => {
+    if (typeof globalThis.fetch === 'function') return globalThis.fetch;
+    const mod = require('node-fetch');
+    return (mod && mod.default) ? mod.default : mod;
+};
 
 // Віддалена адреса стрічки новин в офіційному репозиторії
 const NEWS_FEED_URL = process.env.NEWS_FEED_URL || 'https://raw.githubusercontent.com/aleksnero/n8n-backup-manager/main/news.json';
@@ -110,7 +116,8 @@ async function getNewsFeed() {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 4000); // 4 сек таймаут
 
-        const res = await fetch(NEWS_FEED_URL, {
+        const fetchFn = getFetch();
+        const res = await fetchFn(NEWS_FEED_URL, {
             signal: controller.signal,
             headers: { 'Accept': 'application/json' }
         });
