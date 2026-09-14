@@ -40,8 +40,10 @@ $filesToCopy = @(
     "server/routes",
     "server/services",
     "server/models",
+    "server/middleware",
     "server/public",
-    "version.json"
+    "version.json",
+    "news.json"
 )
 
 foreach ($file in $filesToCopy) {
@@ -53,15 +55,24 @@ foreach ($file in $filesToCopy) {
     }
 }
 
-# 5. Create Zip Archive
-Write-Host "Creating deploy.zip..." -ForegroundColor Yellow
-if (Test-Path "deploy.zip") {
-    Remove-Item -Force "deploy.zip"
-}
-Compress-Archive -Path "deploy/*" -DestinationPath "deploy.zip" -Force
+# 5. Create Zip Archive (using Node AdmZip to ensure Linux-compatible forward slash '/' paths)
+Write-Host "Creating Linux-compatible zip archives..." -ForegroundColor Yellow
+if (Test-Path "deploy.zip") { Remove-Item -Force "deploy.zip" }
+
+node -e "
+const AdmZip = require('./server/node_modules/adm-zip');
+const zip = new AdmZip();
+zip.addLocalFolder('deploy');
+zip.writeZip('deploy.zip');
+
+const version = require('./version.json').version || '1.6.0';
+const updateZipName = 'backup_v' + version + '.zip';
+zip.writeZip(updateZipName);
+console.log('Created deploy.zip and ' + updateZipName);
+"
 
 # 6. Cleanup
 Remove-Item -Recurse -Force "deploy"
 
-Write-Host "Success! deploy.zip created." -ForegroundColor Green
-Write-Host "You can now upload deploy.zip to your server." -ForegroundColor Cyan
+Write-Host "Success! deploy.zip and backup_v*.zip created." -ForegroundColor Green
+Write-Host "You can now upload backup_v*.zip directly in the Updates web page!" -ForegroundColor Cyan

@@ -18,8 +18,14 @@ async function getNotificationConfig() {
 function buildMessage(event, data) {
     const timestamp = new Date().toLocaleString();
     switch (event) {
-        case 'backup_success':
-            return `✅ *Backup Created*\n\`${data.filename}\`\nSize: ${data.size || '—'}\n🕐 ${timestamp}`;
+        case 'backup_success': {
+            let msg = `✅ *Backup Created*\n\`${data.filename}\`\nSize: ${data.size || '—'}`;
+            if (data.integrity) {
+                msg += `\n🛡️ Integrity: ${data.integrity}`;
+            }
+            msg += `\n🕐 ${timestamp}`;
+            return msg;
+        }
         case 'backup_failed':
             return `❌ *Backup Failed*\nError: ${data.error || 'Unknown error'}\n🕐 ${timestamp}`;
         case 'restore_success':
@@ -61,4 +67,105 @@ async function notifyWebhook(event, data = {}) {
     }
 }
 
-module.exports = { notifyWebhook };
+// Кеш для перевірки статусу підключення Telegram (TTL: 60 сек)
+let telegramStatusCache = {
+    key: '',
+    result: false,
+    timestamp: 0
+};
+
+/**
+ * Перевіряє дійсність підключення до Telegram Bot API (без надсилання повідомлення)
+ */
+async function testTelegramConnection(token, chatId) {
+    if (!token) return false;
+
+    const cacheKey = `${token}_${chatId || ''}`;
+    const now = Date.now();
+    if (telegramStatusCache.key === cacheKey && (now - telegramStatusCache.timestamp) < 60000) {
+        return telegramStatusCache.result;
+    }
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+        // Перевіряємо валідність токена бота
+        const res = await fetch(`https://api.telegram.org/bot${token}/getMe`, {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+            telegramStatusCache = { key: cacheKey, result: false, timestamp: now };
+            return false;
+        }
+
+        const data = await res.json();
+        let isValid = data.ok === true;
+
+        // Якщо вказано chat_id, перевіряємо доступність чату
+        if (isValid && chatId) {
+            try {
+                const chatController = new AbortController();
+                const chatTimeout = setTimeout(() => chatController.abort(), 4000);
+                const chatRes = await fetch(`https://api.telegram.org/bot${token}/getChat?chat_id=${chatId}`, {
+                    signal: chatController.signal
+                });
+                clearTimeout(chatTimeout);
+                if (chatRes.ok) {
+                    const chatData = await chatRes.json();
+                    if (chatData && chatData.ok) {
+                        isValid = true;
+                    }
+                }
+            } catch (_) {
+                // Якщо getChat не вдався (наприклад чат приватний і бот не має /start),
+                // але getMe повертає ok: true, то сам бот активний
+            }
+        }
+
+        telegramStatusCache = { key: cacheKey, result: isValid, timestamp: now };
+        return isValid;
+    } catch (err) {
+        telegramStatusCache = { key: cacheKey, result: false, timestamp: now };
+        return false;
+    }
+}
+
+/**
+ * Надсилає тестове повідомлення в Telegram для валідації налаштувань користувачем
+ */
+async function sendTestMessage(token, chatId) {
+    try {
+        const text = `🔔 *n8n Backup Manager*\nТестове сповіщення успішно надіслано!\nTest notification delivered successfully!\n🕐 ${new Date().toLocaleString()}`;
+        const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text,
+                parse_mode: 'Markdown'
+            })
+        });
+
+        const data = await res.json();
+        if (data.ok) {
+            telegramStatusCache = { key: `${token}_${chatId}`, result: true, timestamp: Date.now() };
+            return { ok: true };
+        } else {
+            return { ok: false, error: data.description || 'Failed to send message' };
+        }
+    } catch (err) {
+        return { ok: false, error: err.message };
+    }
+}
+
+module.exports = {
+    notifyWebhook,
+    testTelegramConnection,
+    sendTestMessage
+};
+

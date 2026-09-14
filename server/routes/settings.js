@@ -13,6 +13,38 @@ router.get('/', verifyToken, async (req, res) => {
         });
         // Inject app version
         settingsMap.version = require('../package.json').version;
+        if (settingsMap.auto_integrity_check === undefined) {
+            settingsMap.auto_integrity_check = 'true';
+        }
+
+        // Синхронізація статусу хмари: storage_location ('cloud' | 'local') та aws_s3_enabled ('true' | 'false')
+        const isCloudEnabled = settingsMap.storage_location === 'cloud' || settingsMap.aws_s3_enabled === 'true';
+        settingsMap.storage_location = isCloudEnabled ? 'cloud' : 'local';
+        settingsMap.aws_s3_enabled = isCloudEnabled ? 'true' : 'false';
+
+        // Якщо в БД збережено google_drive_credentials як OAuth2 JSON, заповнюємо окремі поля для зручності UI
+        if (settingsMap.google_drive_credentials) {
+            try {
+                const parsed = JSON.parse(settingsMap.google_drive_credentials);
+                if (parsed.client_id && !settingsMap.gdrive_client_id) settingsMap.gdrive_client_id = parsed.client_id;
+                if (parsed.client_secret && !settingsMap.gdrive_client_secret) settingsMap.gdrive_client_secret = parsed.client_secret;
+                if (parsed.refresh_token && !settingsMap.gdrive_refresh_token) settingsMap.gdrive_refresh_token = parsed.refresh_token;
+            } catch (_) {}
+        }
+        if (settingsMap.google_drive_folder_id && !settingsMap.gdrive_folder_id) {
+            settingsMap.gdrive_folder_id = settingsMap.google_drive_folder_id;
+        }
+
+        // Якщо onedrive_refresh_token містить JSON з client_id
+        if (settingsMap.onedrive_refresh_token && typeof settingsMap.onedrive_refresh_token === 'string' && settingsMap.onedrive_refresh_token.startsWith('{')) {
+            try {
+                const parsed = JSON.parse(settingsMap.onedrive_refresh_token);
+                if (parsed.client_id && !settingsMap.onedrive_client_id) settingsMap.onedrive_client_id = parsed.client_id;
+                if (parsed.client_secret && !settingsMap.onedrive_client_secret) settingsMap.onedrive_client_secret = parsed.client_secret;
+                if (parsed.refresh_token) settingsMap.onedrive_refresh_token = parsed.refresh_token;
+            } catch (_) {}
+        }
+
         res.json(settingsMap);
     } catch (error) {
         res.status(500).send({ message: error.message });
@@ -21,7 +53,27 @@ router.get('/', verifyToken, async (req, res) => {
 
 router.post('/', verifyToken, async (req, res) => {
     try {
-        const settingsData = req.body;
+        const settingsData = { ...req.body };
+
+        // Синхронізуємо обидва ключі для збереження в базі даних
+        if (settingsData.storage_location !== undefined || settingsData.aws_s3_enabled !== undefined) {
+            const isCloud = settingsData.storage_location === 'cloud' || settingsData.aws_s3_enabled === 'true';
+            settingsData.storage_location = isCloud ? 'cloud' : 'local';
+            settingsData.aws_s3_enabled = isCloud ? 'true' : 'false';
+        }
+
+        // Автоматично формуємо google_drive_credentials при заповненні окремих OAuth2 полів
+        if (settingsData.gdrive_client_id && settingsData.gdrive_refresh_token) {
+            settingsData.google_drive_credentials = JSON.stringify({
+                client_id: settingsData.gdrive_client_id.trim(),
+                client_secret: (settingsData.gdrive_client_secret || '').trim(),
+                refresh_token: settingsData.gdrive_refresh_token.trim()
+            });
+        }
+        if (settingsData.gdrive_folder_id !== undefined) {
+            settingsData.google_drive_folder_id = settingsData.gdrive_folder_id.trim();
+        }
+
         for (const [key, value] of Object.entries(settingsData)) {
             await Settings.upsert({ key, value: String(value) });
         }
@@ -97,29 +149,59 @@ router.post('/notify/test', verifyToken, async (req, res) => {
 });
 
 router.post('/cloud/test', verifyToken, async (req, res) => {
-    const { provider } = req.body;
+    const { provider, credentials: bodyCredentials } = req.body;
     if (!provider) return res.status(400).json({ ok: false, error: 'Provider is required' });
 
     try {
         if (provider === 'gdrive') {
-            const clientId = (await Settings.findByPk('gdrive_client_id'))?.value;
-            const clientSecret = (await Settings.findByPk('gdrive_client_secret'))?.value;
-            const refreshToken = (await Settings.findByPk('gdrive_refresh_token'))?.value;
+            let credentials = null;
 
-            if (!clientId || !clientSecret || !refreshToken) {
+            // 1. Прямий об'єкт або JSON
+            if (bodyCredentials && (bodyCredentials.client_email || (bodyCredentials.client_id && bodyCredentials.refresh_token))) {
+                credentials = bodyCredentials;
+            }
+
+            // 2. google_drive_credentials із запиту або бази даних
+            if (!credentials) {
+                const credsStr = bodyCredentials?.google_drive_credentials || (await Settings.findByPk('google_drive_credentials'))?.value;
+                if (credsStr) {
+                    try {
+                        credentials = typeof credsStr === 'string' ? JSON.parse(credsStr) : credsStr;
+                    } catch (_) {}
+                }
+            }
+
+            // 3. Окремі поля
+            if (!credentials) {
+                const clientId = bodyCredentials?.client_id || (await Settings.findByPk('gdrive_client_id'))?.value;
+                const clientSecret = bodyCredentials?.client_secret || (await Settings.findByPk('gdrive_client_secret'))?.value;
+                const refreshToken = bodyCredentials?.refresh_token || (await Settings.findByPk('gdrive_refresh_token'))?.value;
+
+                if (clientId && refreshToken) {
+                    credentials = { client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken };
+                }
+            }
+
+            if (!credentials) {
                 return res.json({ ok: false, error: 'Missing Google Drive credentials (client_id, client_secret, or refresh_token)' });
             }
 
-            const credentials = { client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken };
             const { testGDriveConnection } = require('../services/cloud/googleDrive');
             const result = await testGDriveConnection(credentials);
             return res.json({ ok: result, error: result ? null : 'Connection test failed — check credentials' });
         }
 
         if (provider === 'onedrive') {
-            const clientId = (await Settings.findByPk('onedrive_client_id'))?.value;
-            const clientSecret = (await Settings.findByPk('onedrive_client_secret'))?.value;
-            const refreshToken = (await Settings.findByPk('onedrive_refresh_token'))?.value;
+            let refreshToken = bodyCredentials?.refresh_token || (await Settings.findByPk('onedrive_refresh_token'))?.value;
+            const clientId = bodyCredentials?.client_id || (await Settings.findByPk('onedrive_client_id'))?.value;
+            const clientSecret = bodyCredentials?.client_secret || (await Settings.findByPk('onedrive_client_secret'))?.value;
+
+            if (refreshToken && typeof refreshToken === 'string' && refreshToken.startsWith('{')) {
+                try {
+                    const parsed = JSON.parse(refreshToken);
+                    if (parsed.refresh_token) refreshToken = parsed.refresh_token;
+                } catch (_) {}
+            }
 
             if (!refreshToken) {
                 return res.json({ ok: false, error: 'Missing OneDrive refresh_token' });
@@ -135,11 +217,11 @@ router.post('/cloud/test', verifyToken, async (req, res) => {
         }
 
         if (provider === 's3') {
-            const accessKeyId = (await Settings.findByPk('aws_s3_access_key'))?.value;
-            const secretAccessKey = (await Settings.findByPk('aws_s3_secret_key'))?.value;
-            const region = (await Settings.findByPk('aws_s3_region'))?.value;
-            const bucket = (await Settings.findByPk('aws_s3_bucket'))?.value;
-            const endpoint = (await Settings.findByPk('aws_s3_endpoint'))?.value;
+            const accessKeyId = bodyCredentials?.access_key || (await Settings.findByPk('aws_s3_access_key'))?.value;
+            const secretAccessKey = bodyCredentials?.secret_key || (await Settings.findByPk('aws_s3_secret_key'))?.value;
+            const region = bodyCredentials?.region || (await Settings.findByPk('aws_s3_region'))?.value;
+            const bucket = bodyCredentials?.bucket || (await Settings.findByPk('aws_s3_bucket'))?.value;
+            const endpoint = bodyCredentials?.endpoint !== undefined ? bodyCredentials.endpoint : (await Settings.findByPk('aws_s3_endpoint'))?.value;
 
             if (!accessKeyId || !secretAccessKey || !bucket || !region) {
                 return res.json({ ok: false, error: 'Missing S3 credentials (access_key, secret_key, region, or bucket)' });
@@ -161,4 +243,28 @@ router.post('/cloud/test', verifyToken, async (req, res) => {
     }
 });
 
+/**
+ * POST /api/settings/test-notification
+ * Надсилає тестове сповіщення у Telegram для перевірки налаштувань
+ */
+router.post('/test-notification', verifyToken, async (req, res) => {
+    try {
+        const { telegram_token, telegram_chat_id } = req.body;
+        const token = telegram_token || (await Settings.findByPk('notification_telegram_token'))?.value;
+        const chatId = telegram_chat_id || (await Settings.findByPk('notification_telegram_chat_id'))?.value;
+
+        if (!token || !chatId) {
+            return res.status(400).json({ ok: false, error: 'Telegram Token and Chat ID are required' });
+        }
+
+        const { sendTestMessage } = require('../services/notificationService');
+        const result = await sendTestMessage(token, chatId);
+        res.json(result);
+    } catch (error) {
+        console.error('Test notification error:', error.message);
+        res.status(500).json({ ok: false, error: error.message });
+    }
+});
+
 module.exports = router;
+

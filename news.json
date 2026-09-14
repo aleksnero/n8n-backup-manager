@@ -1,0 +1,41 @@
+[
+  {
+    "id": "test-remote-feed-live",
+    "title": "Тестове повідомлення: віддалена стрічка активна!",
+    "title_en": "Test Notice: Remote News Feed is Live!",
+    "date": "2026-09-14",
+    "type": "info",
+    "badge": "LIVE",
+    "content": "Це тестове оголошення, опубліковане напряму з GitHub для перевірки віддаленої стрічки. Автоматичне оновлення успішно працює!",
+    "content_en": "This is a test announcement published directly from GitHub to verify the remote feed. Automatic delivery is working live!",
+    "link": "https://github.com/aleksnero/n8n-backup-manager",
+    "linkText": "GitHub",
+    "pinned": true
+  },
+  {
+    "id": "release-v1.6.0",
+    "title": "Реліз v1.6.0: Снапшоти воркфлоу та облікових даних",
+    "title_en": "Release v1.6.0: Workflow & Credentials Snapshots",
+    "date": "2026-09-13",
+    "type": "release",
+    "badge": "NEW",
+    "content": "У версії 1.6.0 додано окремий модуль точкового резервного копіювання окремих процесів n8n разом із пов'язаними обліковими даними (credentials), підтримкою авто-розкладу та миттєвим відновленням без зупинки системи.",
+    "content_en": "Version 1.6.0 introduces surgical snapshots for individual n8n workflows with linked credentials, auto-scheduler, and zero-downtime rollback.",
+    "link": "https://github.com/aleksnero/n8n-backup-manager/releases",
+    "linkText": "GitHub Releases",
+    "pinned": false
+  },
+  {
+    "id": "tip-integrity-check",
+    "title": "Порада: Автоматична перевірка цілісності бекапів",
+    "title_en": "Tip: Automated Backup Integrity Verification",
+    "date": "2026-09-10",
+    "type": "tip",
+    "badge": "TIP",
+    "content": "У розділі «Налаштування» рекомендуємо увімкнути «Автоперевірку цілісності» (Auto Integrity Check), щоб система автоматично підтверджувала валідність архівів після створення.",
+    "content_en": "Enable 'Auto Integrity Check' in Settings to ensure every created archive is automatically tested for recoverability.",
+    "link": "https://github.com/aleksnero/n8n-backup-manager#features",
+    "linkText": "Документація",
+    "pinned": false
+  }
+]

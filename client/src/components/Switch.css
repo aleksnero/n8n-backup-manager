@@ -1,0 +1,130 @@
+/* Стильний перемикач Switch із SVG-іконками (хрестик та галочка) */
+.toggle-switch {
+  --switch-width: 46px;
+  --switch-height: 24px;
+  --switch-bg: #475569;
+  --switch-checked-bg: var(--accent, #ea4b71);
+  --circle-diameter: 18px;
+  --circle-bg: #ffffff;
+  --circle-shadow: 1px 1px 2px rgba(0, 0, 0, 0.35);
+  --circle-checked-shadow: -1px 1px 2px rgba(0, 0, 0, 0.35);
+  --switch-offset: calc((var(--switch-height) - var(--circle-diameter)) / 2);
+  --switch-transition: all .25s cubic-bezier(0.27, 0.2, 0.25, 1.51);
+  --icon-transition: all .25s cubic-bezier(0.27, 0.2, 0.25, 1.51);
+  --icon-cross-color: #64748b;
+  --icon-cross-size: 7px;
+  --icon-checkmark-color: var(--switch-checked-bg);
+  --icon-checkmark-size: 10px;
+  --effect-width: calc(var(--circle-diameter) / 2);
+  --effect-height: calc(var(--effect-width) / 2 - 1px);
+  --effect-bg: var(--circle-bg);
+  --effect-border-radius: 1px;
+  --effect-transition: all .2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  vertical-align: middle;
+}
+
+.toggle-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.toggle-switch .slider {
+  box-sizing: border-box;
+  width: var(--switch-width);
+  height: var(--switch-height);
+  background: var(--switch-bg);
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  transition: var(--switch-transition);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch .circle {
+  width: var(--circle-diameter);
+  height: var(--circle-diameter);
+  background: var(--circle-bg);
+  border-radius: inherit;
+  box-shadow: var(--circle-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--switch-transition);
+  z-index: 1;
+  position: absolute;
+  left: var(--switch-offset);
+}
+
+.toggle-switch svg {
+  transition: var(--icon-transition);
+  position: absolute;
+  height: auto;
+}
+
+.toggle-switch .checkmark {
+  width: var(--icon-checkmark-size);
+  color: var(--icon-checkmark-color);
+  transform: scale(0);
+}
+
+.toggle-switch .cross {
+  width: var(--icon-cross-size);
+  color: var(--icon-cross-color);
+  transform: scale(1);
+}
+
+.toggle-switch .slider::before {
+  content: "";
+  position: absolute;
+  width: var(--effect-width);
+  height: var(--effect-height);
+  left: calc(var(--switch-offset) + (var(--effect-width) / 2));
+  background: var(--effect-bg);
+  border-radius: var(--effect-border-radius);
+  transition: var(--effect-transition);
+  opacity: 0.5;
+}
+
+/* Стан увімкнено (Checked) */
+.toggle-switch input:checked + .slider {
+  background: var(--switch-checked-bg);
+}
+
+.toggle-switch input:checked + .slider .checkmark {
+  transform: scale(1);
+}
+
+.toggle-switch input:checked + .slider .cross {
+  transform: scale(0);
+}
+
+.toggle-switch input:checked + .slider::before {
+  left: calc(100% - var(--effect-width) - (var(--effect-width) / 2) - var(--switch-offset));
+}
+
+.toggle-switch input:checked + .slider .circle {
+  left: calc(100% - var(--circle-diameter) - var(--switch-offset));
+  box-shadow: var(--circle-checked-shadow);
+}
+
+/* Фокус для доступності клавіатури */
+.toggle-switch input:focus-visible + .slider {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Відключений стан */
+.toggle-switch.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

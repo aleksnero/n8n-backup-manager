@@ -22,6 +22,7 @@ npm-debug.log*
 # Deployment archives
 deploy.zip
 deploy_*.zip
+backup_*.zip
 temp_update.zip
 release.zip
 

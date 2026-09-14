@@ -4,11 +4,34 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Backup Manager</title>
-    <script type="module" crossorigin src="/assets/index-CHRa5Kg3.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BgdH6zX0.css">
+    <title>n8n Backup Manager</title>
+    <meta name="description" content="Manage and automate backups for your n8n instance" />
+    <meta name="theme-color" content="#ea4b71" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <script type="module" crossorigin src="/assets/index-ypv6o-Og.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-FCqFLRf1.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Реєстрація Service Worker для PWA підтримки з авто-оновленням
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            // Перевіряємо наявність оновлення SW щоразу при завантаженні
+            reg.update();
+          }).catch((err) => console.warn('SW registration failed:', err));
+
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+              refreshing = true;
+              window.location.reload();
+            }
+          });
+        });
+      }
+    </script>
   </body>
 </html>

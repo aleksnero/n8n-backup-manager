@@ -22,11 +22,23 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/backups', backupRoutes);
+app.use('/api/workflow-snapshots', require('./routes/workflowSnapshots'));
 app.use('/api/logs', logsRoutes);
 app.use('/api/updates', require('./routes/update'));
+app.use('/api/news', require('./routes/news'));
 
+// Ensure models are registered for schema sync
+require('./models/WorkflowSnapshot');
+
+
+// Забороняємо браузеру кешувати Service Worker та index.html (запобігає зависанню старого інтерфейсу після оновлення)
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
 
 app.get('*', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

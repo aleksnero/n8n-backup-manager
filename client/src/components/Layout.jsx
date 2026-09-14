@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
-import { LayoutDashboard, Database, Settings, FileText, LogOut, RefreshCw, Menu, X, Globe, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Database, Settings, FileText, LogOut, RefreshCw, Menu, X, Globe, Sun, Moon, Workflow } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Layout() {
@@ -26,6 +26,7 @@ export default function Layout() {
     const navItems = [
         { path: '/', icon: <LayoutDashboard size={20} />, label: t('dashboard') },
         { path: '/backups', icon: <Database size={20} />, label: t('database') },
+        { path: '/workflows', icon: <Workflow size={20} />, label: t('workflow_snapshots') },
         { path: '/settings', icon: <Settings size={20} />, label: t('settings') },
         { path: '/logs', icon: <FileText size={20} />, label: t('logs') },
         { path: '/updates', icon: <RefreshCw size={20} />, label: t('updates') },

@@ -4,9 +4,10 @@ This document tracks planned features, enhancements, and known issues for future
 
 ## Next Release (v1.6.0 / Upcoming)
 - [x] **Prebuilt Docker Image (Issue #37) [Priority: High]:** Setup GitHub Actions workflow (`docker-publish.yml`) to automatically build and push multi-platform (`linux/amd64`, `linux/arm64`) Docker images to GHCR on push/release tags. Updated `docker-compose.yml` to use `ghcr.io/aleksnero/n8n-backup-manager:latest`.
-- [ ] **Cloud Test Connection UI [Priority: High]:** Add dedicated "Test Connection" buttons in Settings UI for S3, Google Drive, and OneDrive (backend endpoint `/api/settings/cloud/test` ready).
-- [ ] **Granular Workflow JSON Export [Priority: High]:** In addition to the full database dump, export individual workflow JSON files into an internal `/workflows` archive folder. Enables single-workflow recovery without rolling back the whole database.
-- [ ] **Independent News Feed [Priority: Medium]:** Dynamic announcement feed in Dashboard that fetches notices from a remote `news.json` repository without requiring app updates.
+- [x] **Semantic Integrity Verification & Auto/Manual Mode [Priority: High]:** Extended backup integrity service to count workflows and credentials for both SQLite and PostgreSQL. Flags empty backups (`0 workflows`) as failures. Added auto/manual toggle in Settings, persists check results (status and entity counts) directly into the database, displays verified counts immediately in UI badges, and includes integrity verification results in Telegram notifications.
+- [x] **Cloud Test Connection UI [Priority: High]:** Add dedicated "Test Connection" buttons in Settings UI for S3, Google Drive, and OneDrive with support for validating unsaved form credentials.
+- [x] **Granular Workflow & Credentials Snapshots Subsystem (v1.6.0) [Priority: High]:** Dedicated UI page and backend module for capturing, downloading, scheduling, and rolling back individual n8n workflows bundled with their linked credentials (zero-downtime rollback, AES-256 encryption, cloud sync to S3/GDrive/OneDrive, and retention lock).
+- [x] **Independent News Feed [Priority: Medium]:** Dynamic announcement feed in Dashboard that fetches notices from a remote `news.json` repository on GitHub without requiring app updates. Features in-memory caching (30m TTL), 4s request timeout, local fallback, schema sanitization, unread counter badge, and client-side dismissal state (read/unread) in `localStorage`.
 - [ ] **Log Management UI [Priority: Low]:** Add a way to view, filter, and clear/trim system logs directly from Settings/Dashboard UI to keep database size optimal.
 
 ## Planned for Future Releases (v1.7.0+ & Backlog)

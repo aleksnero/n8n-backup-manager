@@ -31,6 +31,21 @@ const Backup = sequelize.define('Backup', {
         type: DataTypes.STRING,
         defaultValue: 'local',
         allowNull: false
+    },
+    // Результат перевірки цілісності: 'ok', 'corrupt', 'unsupported' або null
+    integrityStatus: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    // Деталі перевірки (кількість workflows, credentials або повідомлення про помилку)
+    integrityDetails: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    // Час проведення перевірки
+    integrityCheckedAt: {
+        type: DataTypes.DATE,
+        allowNull: true
     }
 });
 

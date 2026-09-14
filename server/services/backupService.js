@@ -343,10 +343,34 @@ const createBackup = async (type = 'manual', label = null) => {
             storageLocation: 'local'
         });
 
+        // 3.5. Автоматична перевірка цілісності (якщо увімкнено перемикач в налаштуваннях)
+        let integrityInfo = null;
+        const autoIntegrity = await getSetting('auto_integrity_check');
+        const isAuto = autoIntegrity === null || autoIntegrity === 'true';
+        if (isAuto && process.platform === 'linux') {
+            try {
+                await logMessage('info', `Running automatic integrity check for ${filename}...`);
+                const { checkBackupIntegrity } = require('./integrityService');
+                const checkRes = await checkBackupIntegrity(backup.id);
+                if (checkRes.ok) {
+                    const wfCount = checkRes.stats?.workflows ?? 0;
+                    const credCount = checkRes.stats?.credentials ?? 0;
+                    integrityInfo = `OK (${wfCount} wf, ${credCount} creds)`;
+                    await logMessage('info', `Automatic integrity check passed: ${wfCount} workflows, ${credCount} credentials`);
+                } else {
+                    integrityInfo = `FAILED (${checkRes.error || 'corrupted'})`;
+                    await logMessage('warn', `Automatic integrity check failed: ${checkRes.error || 'corrupted'}`);
+                }
+            } catch (err) {
+                await logMessage('warn', `Automatic integrity check error: ${err.message}`);
+            }
+        }
+
         // Сповіщення про успішний бекап (fire-and-forget)
         notifyWebhook('backup_success', {
             filename,
-            size: `${(stats.size / 1024 / 1024).toFixed(2)} MB`
+            size: `${(stats.size / 1024 / 1024).toFixed(2)} MB`,
+            integrity: integrityInfo
         });
 
         // Attempt Generic Cloud Upload
@@ -651,19 +675,35 @@ const checkConnectionStatus = async () => {
             }
         }
 
-        // 3. Check Google Drive connectivity
-        const s3Enabled = await getSetting('aws_s3_enabled') === 'true';
-        const provider = await getSetting('cloud_provider') || 's3';
+        // 3. Check Cloud connectivity
+        const cloudEnabled = (await getSetting('storage_location')) === 'cloud' || (await getSetting('aws_s3_enabled')) === 'true';
+        const provider = (await getSetting('cloud_provider')) || 's3';
 
-        if (s3Enabled && provider === 'gdrive') {
+        status.cloudEnabled = cloudEnabled;
+        status.cloudProvider = provider;
+
+        if (cloudEnabled && provider === 'gdrive') {
             try {
+                let credentials = null;
                 const credsStr = await getSetting('google_drive_credentials');
                 if (credsStr) {
-                    const credentials = typeof credsStr === 'string' ? JSON.parse(credsStr) : credsStr;
-                    if (credentials.client_email || credentials.client_id) {
-                        const { testGDriveConnection } = require('./cloud/googleDrive');
-                        status.gdrive = await testGDriveConnection(credentials);
+                    try {
+                        credentials = typeof credsStr === 'string' ? JSON.parse(credsStr) : credsStr;
+                    } catch (_) {}
+                }
+                if (!credentials) {
+                    const clientId = await getSetting('gdrive_client_id');
+                    const clientSecret = await getSetting('gdrive_client_secret');
+                    const refreshToken = await getSetting('gdrive_refresh_token');
+                    if (clientId && refreshToken) {
+                        credentials = { client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken };
                     }
+                }
+                if (credentials && (credentials.client_email || (credentials.client_id && credentials.refresh_token))) {
+                    const { testGDriveConnection } = require('./cloud/googleDrive');
+                    status.gdrive = await testGDriveConnection(credentials);
+                } else {
+                    status.gdrive = false;
                 }
             } catch (e) {
                 status.gdrive = false;
@@ -671,15 +711,85 @@ const checkConnectionStatus = async () => {
         }
 
         // 4. Check OneDrive connectivity
-        if (s3Enabled && provider === 'onedrive') {
+        if (cloudEnabled && provider === 'onedrive') {
             try {
-                const refreshToken = await getSetting('onedrive_refresh_token');
-                if (refreshToken && refreshToken.length > 50) {
+                let refreshToken = await getSetting('onedrive_refresh_token');
+                const clientId = await getSetting('onedrive_client_id');
+                const clientSecret = await getSetting('onedrive_client_secret');
+
+                if (refreshToken && typeof refreshToken === 'string' && refreshToken.startsWith('{')) {
+                    try {
+                        const parsed = JSON.parse(refreshToken);
+                        if (parsed.refresh_token) refreshToken = parsed.refresh_token;
+                    } catch (_) {}
+                }
+
+                if (refreshToken) {
+                    const credentials = (clientId && clientSecret)
+                        ? { client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken }
+                        : refreshToken;
                     const { testOneDriveConnection } = require('./cloud/oneDrive');
-                    status.onedrive = await testOneDriveConnection(refreshToken);
+                    status.onedrive = await testOneDriveConnection(credentials);
+                } else {
+                    status.onedrive = false;
                 }
             } catch (e) {
                 status.onedrive = false;
+            }
+        }
+
+        // 5. Check S3 connectivity
+        if (cloudEnabled && provider === 's3') {
+            try {
+                const accessKeyId = await getSetting('aws_s3_access_key');
+                const secretAccessKey = await getSetting('aws_s3_secret_key');
+                const region = await getSetting('aws_s3_region');
+                const bucket = await getSetting('aws_s3_bucket');
+                const endpoint = await getSetting('aws_s3_endpoint');
+
+                if (accessKeyId && secretAccessKey && region && bucket) {
+                    const { S3Client, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+                    const config = { region, credentials: { accessKeyId, secretAccessKey } };
+                    if (endpoint) { config.endpoint = endpoint; config.forcePathStyle = true; }
+                    const s3Client = new S3Client(config);
+                    await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 }));
+                    status.s3 = true;
+                } else {
+                    status.s3 = false;
+                }
+            } catch (e) {
+                status.s3 = false;
+            }
+        }
+
+        // 6. Check Notification Channels (Telegram and future channels)
+        status.notificationChannels = [];
+
+        const notifEnabled = (await getSetting('notification_enabled')) === 'true';
+        const telegramToken = await getSetting('notification_telegram_token');
+        const telegramChatId = await getSetting('notification_telegram_chat_id');
+
+        if (notifEnabled && telegramToken) {
+            try {
+                const { testTelegramConnection } = require('./notificationService');
+                const isTelegramConnected = await testTelegramConnection(telegramToken, telegramChatId);
+                status.telegram = isTelegramConnected;
+                status.notificationChannels.push({
+                    id: 'telegram',
+                    name: 'Telegram',
+                    type: 'telegram',
+                    active: isTelegramConnected,
+                    color: '#229ED9'
+                });
+            } catch (e) {
+                status.telegram = false;
+                status.notificationChannels.push({
+                    id: 'telegram',
+                    name: 'Telegram',
+                    type: 'telegram',
+                    active: false,
+                    color: '#229ED9'
+                });
             }
         }
 
@@ -785,7 +895,7 @@ const uploadToS3 = async (filepath, filename) => {
 };
 
 const uploadToCloud = async (filepath, filename, backupId) => {
-    const cloudEnabled = await getSetting('aws_s3_enabled') === 'true'; // Legacy key name, but now means "cloud backups enabled"
+    const cloudEnabled = (await getSetting('storage_location')) === 'cloud' || (await getSetting('aws_s3_enabled')) === 'true';
     if (!cloudEnabled) return;
 
     const provider = await getSetting('cloud_provider') || 's3';
@@ -794,17 +904,27 @@ const uploadToCloud = async (filepath, filename, backupId) => {
         await logMessage('info', `Uploading backup to cloud provider: ${provider}...`);
 
         if (provider === 'gdrive') {
+            let credentials = null;
             const credsStr = await getSetting('google_drive_credentials');
-            const folderId = (await getSetting('google_drive_folder_id') || '').trim();
-            if (!credsStr) {
-                await logMessage('warn', 'Google Drive enabled but credentials missing.');
-                return;
+            if (credsStr) {
+                try {
+                    credentials = typeof credsStr === 'string' ? JSON.parse(credsStr) : credsStr;
+                } catch (e) {
+                    await logMessage('error', `Failed to parse Google Drive credentials: ${e.message}`);
+                    return;
+                }
             }
-            let credentials;
-            try {
-                credentials = typeof credsStr === 'string' ? JSON.parse(credsStr) : credsStr;
-            } catch (e) {
-                await logMessage('error', `Failed to parse Google Drive credentials: ${e.message}`);
+            if (!credentials) {
+                const clientId = await getSetting('gdrive_client_id');
+                const clientSecret = await getSetting('gdrive_client_secret');
+                const refreshToken = await getSetting('gdrive_refresh_token');
+                if (clientId && refreshToken) {
+                    credentials = { client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken };
+                }
+            }
+            const folderId = (await getSetting('gdrive_folder_id') || await getSetting('google_drive_folder_id') || '').trim();
+            if (!credentials) {
+                await logMessage('warn', 'Google Drive enabled but credentials missing.');
                 return;
             }
             const { uploadToGoogleDrive } = require('./cloud/googleDrive');
@@ -820,13 +940,28 @@ const uploadToCloud = async (filepath, filename, backupId) => {
             }
 
         } else if (provider === 'onedrive') {
-            const refreshToken = await getSetting('onedrive_refresh_token');
+            let refreshToken = await getSetting('onedrive_refresh_token');
+            const clientId = await getSetting('onedrive_client_id');
+            const clientSecret = await getSetting('onedrive_client_secret');
+
+            if (refreshToken && typeof refreshToken === 'string' && refreshToken.startsWith('{')) {
+                try {
+                    const parsed = JSON.parse(refreshToken);
+                    if (parsed.refresh_token) refreshToken = parsed.refresh_token;
+                } catch (_) {}
+            }
+
             if (!refreshToken) {
                 await logMessage('warn', 'OneDrive enabled but refresh token missing.');
                 return;
             }
+
+            const credentials = (clientId && clientSecret)
+                ? { client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken }
+                : refreshToken;
+
             const { uploadToOneDrive } = require('./cloud/oneDrive');
-            await uploadToOneDrive(filepath, filename, refreshToken);
+            await uploadToOneDrive(filepath, filename, credentials);
 
             // Update storage location
             if (backupId) {
@@ -900,18 +1035,44 @@ const deleteFromCloud = async (filename, storageLocation) => {
             await logMessage('info', `Deleting backup from cloud location: ${trimmedLoc}...`);
 
             if (trimmedLoc === 'gdrive') {
+                let credentials = null;
                 const credsStr = await getSetting('google_drive_credentials');
-                const folderId = (await getSetting('google_drive_folder_id') || '').trim();
                 if (credsStr) {
-                    const credentials = typeof credsStr === 'string' ? JSON.parse(credsStr) : credsStr;
+                    try {
+                        credentials = typeof credsStr === 'string' ? JSON.parse(credsStr) : credsStr;
+                    } catch (_) {}
+                }
+                if (!credentials) {
+                    const clientId = await getSetting('gdrive_client_id');
+                    const clientSecret = await getSetting('gdrive_client_secret');
+                    const refreshToken = await getSetting('gdrive_refresh_token');
+                    if (clientId && refreshToken) {
+                        credentials = { client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken };
+                    }
+                }
+                const folderId = (await getSetting('gdrive_folder_id') || await getSetting('google_drive_folder_id') || '').trim();
+                if (credentials) {
                     const { deleteFromGoogleDrive } = require('./cloud/googleDrive');
                     await deleteFromGoogleDrive(filename, credentials, folderId);
                 }
             } else if (trimmedLoc === 'onedrive') {
-                const refreshToken = await getSetting('onedrive_refresh_token');
+                let refreshToken = await getSetting('onedrive_refresh_token');
+                const clientId = await getSetting('onedrive_client_id');
+                const clientSecret = await getSetting('onedrive_client_secret');
+
+                if (refreshToken && typeof refreshToken === 'string' && refreshToken.startsWith('{')) {
+                    try {
+                        const parsed = JSON.parse(refreshToken);
+                        if (parsed.refresh_token) refreshToken = parsed.refresh_token;
+                    } catch (_) {}
+                }
+
                 if (refreshToken) {
+                    const credentials = (clientId && clientSecret)
+                        ? { client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken }
+                        : refreshToken;
                     const { deleteFromOneDrive } = require('./cloud/oneDrive');
-                    await deleteFromOneDrive(filename, refreshToken);
+                    await deleteFromOneDrive(filename, credentials);
                 }
             } else if (trimmedLoc === 's3') {
                 const accessKeyId = await getSetting('aws_s3_access_key');

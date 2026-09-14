@@ -10,6 +10,7 @@ import Backups from './pages/Backups';
 import Settings from './pages/Settings';
 import Logs from './pages/Logs';
 import Updates from './pages/Updates';
+import WorkflowSnapshots from './pages/WorkflowSnapshots';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const ProtectedRoute = ({ children }) => {
@@ -26,6 +27,7 @@ function AppRoutes() {
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="backups" element={<Backups />} />
+        <Route path="workflows" element={<WorkflowSnapshots />} />
         <Route path="settings" element={<Settings />} />
         <Route path="logs" element={<Logs />} />
         <Route path="updates" element={<Updates />} />

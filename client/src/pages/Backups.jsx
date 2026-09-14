@@ -247,7 +247,7 @@ export default function Backups() {
                                     </td>
                                     <td>{renderStorageIcons(backup.storageLocation)}</td>
                                     <td>
-                                        <IntegrityBadge backupId={backup.id} />
+                                        <IntegrityBadge backup={backup} backupId={backup.id} />
                                     </td>
                                     <td>
                                         <button

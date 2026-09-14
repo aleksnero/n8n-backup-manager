@@ -14,11 +14,21 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      // Реєстрація Service Worker для PWA підтримки
+      // Реєстрація Service Worker для PWA підтримки з авто-оновленням
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .catch((err) => console.warn('SW registration failed:', err));
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            // Перевіряємо наявність оновлення SW щоразу при завантаженні
+            reg.update();
+          }).catch((err) => console.warn('SW registration failed:', err));
+
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+              refreshing = true;
+              window.location.reload();
+            }
+          });
         });
       }
     </script>

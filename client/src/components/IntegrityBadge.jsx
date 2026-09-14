@@ -10,22 +10,46 @@ import { ShieldCheck, ShieldAlert, ShieldOff, Loader } from 'lucide-react';
  * Props:
  *   backupId — ID бекапу для запиту до API
  */
-export default function IntegrityBadge({ backupId }) {
-    // null = не перевірявся, true = OK, false = пошкоджений, 'unsupported' = не Linux
-    const [status, setStatus] = useState(null);
+export default function IntegrityBadge({ backup, backupId }) {
+    const id = backup?.id || backupId;
+
+    // Ініціалізація збереженого стану з бази даних (якщо перевірка вже проводилась)
+    const [status, setStatus] = useState(() => backup?.integrityStatus || null);
+    const [stats, setStats] = useState(() => {
+        if (backup?.integrityDetails) {
+            try {
+                const parsed = JSON.parse(backup.integrityDetails);
+                if (parsed.workflows !== undefined) return parsed;
+            } catch {
+                return null;
+            }
+        }
+        return null;
+    });
     const [checking, setChecking] = useState(false);
-    const [errorMsg, setErrorMsg] = useState('');
+    const [errorMsg, setErrorMsg] = useState(() => {
+        if (backup?.integrityStatus === 'corrupt' && backup?.integrityDetails) {
+            try {
+                const parsed = JSON.parse(backup.integrityDetails);
+                return parsed.error || 'Corrupted';
+            } catch {
+                return 'Corrupted';
+            }
+        }
+        return '';
+    });
 
     const runCheck = async () => {
-        if (checking) return;
+        if (checking || !id) return;
         setChecking(true);
         setErrorMsg('');
         try {
-            const res = await axios.get(`/api/backups/${backupId}/check`);
+            const res = await axios.get(`/api/backups/${id}/check`);
             if (!res.data.supported) {
                 setStatus('unsupported');
             } else {
                 setStatus(res.data.ok ? 'ok' : 'corrupt');
+                if (res.data.stats) setStats(res.data.stats);
                 if (!res.data.ok) setErrorMsg(res.data.error || 'Corrupted');
             }
         } catch {
@@ -54,9 +78,15 @@ export default function IntegrityBadge({ backupId }) {
     }
 
     if (status === 'ok') {
+        const title = stats ? `Integrity OK (${stats.workflows} workflows, ${stats.credentials ?? 0} credentials)` : 'Integrity OK';
         return (
-            <span title="Integrity OK" style={{ color: 'var(--success)', cursor: 'pointer' }} onClick={runCheck}>
+            <span
+                title={title}
+                style={{ color: 'var(--success)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                onClick={runCheck}
+            >
                 <ShieldCheck size={16} />
+                {stats && <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{stats.workflows} wf</span>}
             </span>
         );
     }

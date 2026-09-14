@@ -1,5 +1,5 @@
 {
-    "version": "1.5.0",
+    "version": "1.6.0",
     "releaseDate": "2026-05-30T10:00:00Z",
     "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.5.0/deploy.zip",
     "releaseNotes": "Major SQLite reliability release: safe restore with container lifecycle management, deep integrity checks via sqlite3 driver, cloud storage cleanup on backup deletion, and UX improvements.",
