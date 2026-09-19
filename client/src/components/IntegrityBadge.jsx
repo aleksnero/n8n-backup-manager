@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { ShieldCheck, ShieldAlert, ShieldOff, Loader } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, ShieldOff, Loader, AlertTriangle } from 'lucide-react';
 
 /**
  * Бейдж перевірки цілісності бекапу.
- * - Linux-сервер: кнопка-іконка → запускає перевірку → показує ✅ / ❌
+ * - Linux-сервер: кнопка-іконка → запускає перевірку → показує ✅ (ok), ⚠️ (warning) або ❌ (corrupt)
  * - Інші платформи: сіра іконка з тултіпом "Linux only"
  *
  * Props:
@@ -19,7 +19,7 @@ export default function IntegrityBadge({ backup, backupId }) {
         if (backup?.integrityDetails) {
             try {
                 const parsed = JSON.parse(backup.integrityDetails);
-                if (parsed.workflows !== undefined) return parsed;
+                if (parsed.workflows !== undefined || parsed.warnings !== undefined) return parsed;
             } catch {
                 return null;
             }
@@ -48,9 +48,11 @@ export default function IntegrityBadge({ backup, backupId }) {
             if (!res.data.supported) {
                 setStatus('unsupported');
             } else {
-                setStatus(res.data.ok ? 'ok' : 'corrupt');
+                const isOk = res.data.ok;
+                const newStatus = res.data.status || (isOk ? 'ok' : 'corrupt');
+                setStatus(newStatus);
                 if (res.data.stats) setStats(res.data.stats);
-                if (!res.data.ok) setErrorMsg(res.data.error || 'Corrupted');
+                if (!isOk) setErrorMsg(res.data.error || 'Corrupted');
             }
         } catch {
             setStatus('corrupt');
@@ -86,6 +88,29 @@ export default function IntegrityBadge({ backup, backupId }) {
                 onClick={runCheck}
             >
                 <ShieldCheck size={16} />
+                {stats && <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{stats.workflows} wf</span>}
+            </span>
+        );
+    }
+
+    if (status === 'warning') {
+        const warnings = stats?.warnings || [];
+        const warningTooltip = warnings.length > 0
+            ? `Integrity Warning:\n• ${warnings.join('\n• ')}`
+            : 'Integrity Warning';
+        return (
+            <span
+                title={warningTooltip}
+                style={{
+                    color: 'var(--warning, #f59e0b)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                }}
+                onClick={runCheck}
+            >
+                <AlertTriangle size={16} />
                 {stats && <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{stats.workflows} wf</span>}
             </span>
         );

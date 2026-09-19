@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { Play, Clock, Database, AlertCircle, Workflow, ArrowRight, Megaphone, ExternalLink, Check, Eye } from 'lucide-react';
+import { Play, Clock, Database, AlertCircle, Workflow, ArrowRight, Megaphone, ExternalLink, Check, Eye, CheckCircle2, X } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
 import Sparkline from '../components/Sparkline';
@@ -52,12 +52,23 @@ export default function Dashboard() {
     // Дані для блоку Workflow Snapshots
     const [workflowSnapshots, setWorkflowSnapshots] = useState([]);
     const [liveWorkflowsCount, setLiveWorkflowsCount] = useState(0);
+    const [snapshotConfig, setSnapshotConfig] = useState(null);
+    const [snapshotCountdown, setSnapshotCountdown] = useState('');
 
     // Стрічка динамічних новин та анонсів проекту
     const [newsFeed, setNewsFeed] = useState([]);
     const [readNewsIds, setReadNewsIds] = useState(() => {
         try {
             const saved = localStorage.getItem('n8n_backup_read_news');
+            return saved ? JSON.parse(saved) : [];
+        } catch (_) {
+            return [];
+        }
+    });
+    // Стан для прихованих / видалених користувачем новин
+    const [dismissedNewsIds, setDismissedNewsIds] = useState(() => {
+        try {
+            const saved = localStorage.getItem('n8n_backup_dismissed_news');
             return saved ? JSON.parse(saved) : [];
         } catch (_) {
             return [];
@@ -76,17 +87,32 @@ export default function Dashboard() {
         });
     };
 
+    // Приховування / видалення новини зі списку назавжди
+    const dismissNews = (id) => {
+        setDismissedNewsIds(prev => {
+            const next = prev.includes(id) ? prev : [...prev, id];
+            try {
+                localStorage.setItem('n8n_backup_dismissed_news', JSON.stringify(next));
+            } catch (_) {}
+            return next;
+        });
+    };
+
+    // Тільки новини, які не були видалені користувачем
+    const activeNewsFeed = useMemo(() => {
+        return newsFeed.filter(item => !dismissedNewsIds.includes(item.id));
+    }, [newsFeed, dismissedNewsIds]);
+
     // Підрахунок кількості непрочитаних новин
     const unreadCount = useMemo(() => {
-        return newsFeed.filter(item => !readNewsIds.includes(item.id)).length;
-    }, [newsFeed, readNewsIds]);
+        return activeNewsFeed.filter(item => !readNewsIds.includes(item.id)).length;
+    }, [activeNewsFeed, readNewsIds]);
 
-    // Фільтрація новин для відображення
+    // Фільтрація новин: показуємо тільки непрочитані, або всі якщо увімкнено showAllNews
     const visibleNews = useMemo(() => {
-        if (showAllNews) return newsFeed;
-        const unread = newsFeed.filter(item => !readNewsIds.includes(item.id));
-        return unread.length > 0 ? unread : newsFeed.slice(0, 2);
-    }, [newsFeed, readNewsIds, showAllNews]);
+        if (showAllNews) return activeNewsFeed;
+        return activeNewsFeed.filter(item => !readNewsIds.includes(item.id));
+    }, [activeNewsFeed, readNewsIds, showAllNews]);
 
     useEffect(() => {
         fetchData();
@@ -107,15 +133,26 @@ export default function Dashboard() {
         }
     }, [settings.backup_schedule, backups]);
 
+    useEffect(() => {
+        if (snapshotConfig?.enabled) {
+            updateSnapshotCountdown(snapshotConfig, workflowSnapshots);
+            const timer = setInterval(() => updateSnapshotCountdown(snapshotConfig, workflowSnapshots), 1000);
+            return () => clearInterval(timer);
+        } else {
+            setSnapshotCountdown(t('not_scheduled'));
+        }
+    }, [snapshotConfig, workflowSnapshots]);
+
     const fetchData = async () => {
         try {
-            const [backupsRes, settingsRes, logsRes, wfSnapRes, wfLiveRes, newsFeedRes] = await Promise.all([
+            const [backupsRes, settingsRes, logsRes, wfSnapRes, wfLiveRes, newsFeedRes, wfSchedRes] = await Promise.all([
                 axios.get('/api/backups'),
                 axios.get('/api/settings'),
                 axios.get('/api/logs'),
                 axios.get('/api/workflow-snapshots').catch(() => ({ data: [] })),
                 axios.get('/api/workflow-snapshots/live').catch(() => ({ data: [] })),
                 axios.get('/api/news').catch(() => ({ data: { news: [] } })),
+                axios.get('/api/workflow-snapshots/schedule/config').catch(() => ({ data: null })),
             ]);
             setBackups(backupsRes.data);
             setSettings(settingsRes.data);
@@ -124,6 +161,9 @@ export default function Dashboard() {
             setLiveWorkflowsCount((wfLiveRes.data || []).length);
             if (newsFeedRes.data?.news) {
                 setNewsFeed(newsFeedRes.data.news);
+            }
+            if (wfSchedRes?.data) {
+                setSnapshotConfig(wfSchedRes.data);
             }
             updateCountdown(settingsRes.data.backup_schedule);
 
@@ -168,6 +208,38 @@ export default function Dashboard() {
             const m = Math.floor((diff % 3600000) / 60000);
             const s = Math.floor((diff % 60000) / 1000);
             setCountdown(`${pad(h)}:${pad(m)}:${pad(s)}`);
+        }
+    };
+
+    const updateSnapshotCountdown = (config, snapshots) => {
+        if (!config || !config.enabled) {
+            setSnapshotCountdown(t('not_scheduled'));
+            return;
+        }
+
+        let nextTime;
+        const now = new Date();
+        const schedule = config.schedule || 'interval:360';
+
+        if (schedule.startsWith('interval:')) {
+            const minutes = parseInt(schedule.split(':')[1], 10) || 360;
+            const lastSnapshot = (snapshots && snapshots.length > 0) ? new Date(snapshots[0].createdAt) : now;
+            nextTime = new Date(lastSnapshot.getTime() + minutes * 60000);
+        } else {
+            const todayMidnight = new Date();
+            todayMidnight.setHours(24, 0, 0, 0);
+            nextTime = todayMidnight;
+        }
+
+        const diff = nextTime - now;
+        if (diff <= 0) {
+            setSnapshotCountdown(t('due_now') || 'Due now');
+        } else {
+            const pad = (n) => n.toString().padStart(2, '0');
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            setSnapshotCountdown(`${pad(h)}:${pad(m)}:${pad(s)}`);
         }
     };
 
@@ -361,12 +433,35 @@ export default function Dashboard() {
                             </div>
                             <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{t('workflow_snapshots')}</h3>
                         </div>
-                        <p style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>
-                            {workflowSnapshots.length}
-                        </p>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem', marginBottom: 0 }}>
-                            {liveWorkflowsCount > 0 ? `${liveWorkflowsCount} ${t('live_workflows_count').toLowerCase()}` : t('snapshots_for_wf')}
-                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <div>
+                                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>
+                                    {workflowSnapshots.length}
+                                </p>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.15rem 0 0 0' }}>
+                                    {t('snapshots')}
+                                </p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0, color: 'var(--accent)' }}>
+                                    {liveWorkflowsCount}
+                                </p>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.15rem 0 0 0' }}>
+                                    {t('live_workflows_count')}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Таймер до наступного авто-снапшоту як у основного бекапу */}
+                        <div style={{ marginTop: '0.65rem', paddingTop: '0.65rem', borderTop: '1px dashed var(--border)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.2rem' }}>
+                                <Clock size={12} />
+                                <span>{snapshotConfig?.enabled ? t('next_snapshot') : (t('schedule') || 'Розклад')}:</span>
+                            </div>
+                            <p style={{ color: snapshotConfig?.enabled ? 'var(--text-primary)' : 'var(--text-secondary)', margin: 0, fontSize: '1.05rem', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                                {snapshotCountdown}
+                            </p>
+                        </div>
                     </div>
                     <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
                         <Link
@@ -392,164 +487,188 @@ export default function Dashboard() {
             </div>
 
             {/* Офіційна стрічка новин та оголошень проекту (GitHub News Feed) */}
-            <div className="card" style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                        <div className="settings-card-icon" style={{ width: '38px', height: '38px' }}>
-                            <Megaphone size={20} />
-                        </div>
-                        <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{t('news_announcements')}</h3>
-                                {unreadCount > 0 && (
-                                    <span style={{ 
-                                        background: 'var(--accent)', 
-                                        color: '#fff', 
-                                        fontSize: '0.75rem', 
-                                        padding: '0.15rem 0.55rem', 
-                                        borderRadius: '12px', 
-                                        fontWeight: 600,
-                                        letterSpacing: '0.02em' 
-                                    }}>
-                                        {unreadCount}
-                                    </span>
-                                )}
+            {settings.enable_news_feed !== 'false' && (
+                <div className="card" style={{ marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                            <div className="settings-card-icon" style={{ width: '38px', height: '38px' }}>
+                                <Megaphone size={20} />
                             </div>
-                            <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                                {t('news_feed_desc')}
-                            </p>
-                        </div>
-                    </div>
-                    {newsFeed.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => setShowAllNews(prev => !prev)}
-                            className="btn btn-secondary"
-                            style={{ padding: '0.4rem 0.75rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                        >
-                            <Eye size={14} />
-                            <span>{showAllNews ? t('show_unread_only') : t('show_all_news')}</span>
-                        </button>
-                    )}
-                </div>
-
-                {newsFeed.length === 0 ? (
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0.5rem 0' }}>
-                        {t('no_news')}
-                    </p>
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                        {visibleNews.map(item => {
-                            const isRead = readNewsIds.includes(item.id);
-                            const title = (typeof item.title === 'object' && item.title !== null)
-                                ? (item.title[language] || item.title['en'] || Object.values(item.title)[0])
-                                : (language === 'en' ? (item.title_en || item.title || '') : (item.title || item.title_en || ''));
-                            const message = (typeof item.message === 'object' && item.message !== null)
-                                ? (item.message[language] || item.message['en'] || Object.values(item.message)[0])
-                                : (language === 'en' ? (item.content_en || item.content || item.message || '') : (item.content || item.content_en || item.message || ''));
-                            const targetUrl = item.url || item.link || null;
-
-                            const badgeConfig = {
-                                release: { label: t('badge_release'), bg: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', icon: '🚀' },
-                                important: { label: t('badge_important'), bg: 'rgba(239, 68, 68, 0.15)', color: '#f87171', icon: '🔥' },
-                                tip: { label: t('badge_tip'), bg: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', icon: '💡' },
-                                info: { label: t('badge_info'), bg: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', icon: 'ℹ️' }
-                            };
-                            const badge = badgeConfig[item.type] || badgeConfig.info;
-
-                            return (
-                                <div
-                                    key={item.id}
-                                    style={{
-                                        padding: '1rem 1.15rem',
-                                        background: isRead ? 'var(--bg-primary)' : 'var(--bg-secondary)',
-                                        borderRadius: 'var(--radius)',
-                                        border: '1px solid var(--border)',
-                                        borderLeft: isRead ? '4px solid var(--border)' : '4px solid var(--accent)',
-                                        transition: 'all 0.2s ease',
-                                        opacity: isRead ? 0.75 : 1
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                                            <span style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '0.3rem',
-                                                fontSize: '0.75rem',
-                                                fontWeight: 600,
-                                                padding: '0.2rem 0.55rem',
-                                                borderRadius: '6px',
-                                                background: badge.bg,
-                                                color: badge.color
-                                            }}>
-                                                <span>{badge.icon}</span>
-                                                {badge.label}
-                                            </span>
-                                            <strong style={{ fontSize: '0.98rem', color: 'var(--text-primary)' }}>
-                                                {title}
-                                            </strong>
-                                            {item.date && (
-                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                                    • {new Date(item.date).toLocaleDateString()}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => toggleReadNews(item.id)}
-                                            className="btn btn-secondary"
-                                            style={{
-                                                padding: '0.3rem 0.6rem',
-                                                fontSize: '0.78rem',
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '0.35rem',
-                                                cursor: 'pointer'
-                                            }}
-                                            title={isRead ? t('restore_news') : t('dismiss_news')}
-                                        >
-                                            <Check size={13} color={isRead ? 'var(--text-secondary)' : 'var(--accent)'} />
-                                            <span>{isRead ? t('restore_news') : t('dismiss_news')}</span>
-                                        </button>
-                                    </div>
-
-                                    <p style={{
-                                        margin: '0 0 0.65rem 0',
-                                        fontSize: '0.88rem',
-                                        lineHeight: 1.5,
-                                        color: 'var(--text-primary)',
-                                        whiteSpace: 'pre-line'
-                                    }}>
-                                        {message}
-                                    </p>
-
-                                    {targetUrl && (
-                                        <a
-                                            href={targetUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '0.35rem',
-                                                fontSize: '0.82rem',
-                                                color: 'var(--accent)',
-                                                textDecoration: 'none',
-                                                fontWeight: 500
-                                            }}
-                                        >
-                                            <span>{t('read_more')}</span>
-                                            <ExternalLink size={13} />
-                                        </a>
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{t('news_announcements')}</h3>
+                                    {unreadCount > 0 && (
+                                        <span style={{ 
+                                            background: 'var(--accent)', 
+                                            color: '#fff', 
+                                            fontSize: '0.75rem', 
+                                            padding: '0.15rem 0.55rem', 
+                                            borderRadius: '12px', 
+                                            fontWeight: 600,
+                                            letterSpacing: '0.02em' 
+                                        }}>
+                                            {unreadCount}
+                                        </span>
                                     )}
                                 </div>
-                            );
-                        })}
+                                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                                    {t('news_feed_desc')}
+                                </p>
+                            </div>
+                        </div>
+                        {activeNewsFeed.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setShowAllNews(prev => !prev)}
+                                className="btn btn-secondary"
+                                style={{ padding: '0.4rem 0.75rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                            >
+                                <Eye size={14} />
+                                <span>{showAllNews ? t('show_unread_only') : t('show_all_news')}</span>
+                            </button>
+                        )}
                     </div>
-                )}
-            </div>
+
+                    {activeNewsFeed.length === 0 ? (
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0.5rem 0' }}>
+                            {t('no_news')}
+                        </p>
+                    ) : visibleNews.length === 0 ? (
+                        <div style={{ padding: '0.75rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                            <CheckCircle2 size={18} style={{ color: 'var(--success)' }} />
+                            <span>{t('all_news_read')}</span>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                            {visibleNews.map(item => {
+                                const isRead = readNewsIds.includes(item.id);
+                                const title = (typeof item.title === 'object' && item.title !== null)
+                                    ? (item.title[language] || item.title['en'] || Object.values(item.title)[0])
+                                    : (language === 'en' ? (item.title_en || item.title || '') : (item.title || item.title_en || ''));
+                                const message = (typeof item.message === 'object' && item.message !== null)
+                                    ? (item.message[language] || item.message['en'] || Object.values(item.message)[0])
+                                    : (language === 'en' ? (item.content_en || item.content || item.message || '') : (item.content || item.content_en || item.message || ''));
+                                const targetUrl = item.url || item.link || null;
+
+                                const badgeConfig = {
+                                    release: { label: t('badge_release'), bg: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', icon: '🚀' },
+                                    important: { label: t('badge_important'), bg: 'rgba(239, 68, 68, 0.15)', color: '#f87171', icon: '🔥' },
+                                    tip: { label: t('badge_tip'), bg: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', icon: '💡' },
+                                    info: { label: t('badge_info'), bg: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', icon: 'ℹ️' }
+                                };
+                                const badge = badgeConfig[item.type] || badgeConfig.info;
+
+                                return (
+                                    <div
+                                        key={item.id}
+                                        style={{
+                                            padding: '1rem 1.15rem',
+                                            background: isRead ? 'var(--bg-primary)' : 'var(--bg-secondary)',
+                                            borderRadius: 'var(--radius)',
+                                            border: '1px solid var(--border)',
+                                            borderLeft: isRead ? '4px solid var(--border)' : '4px solid var(--accent)',
+                                            transition: 'all 0.2s ease',
+                                            opacity: isRead ? 0.75 : 1
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                                                <span style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.3rem',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 600,
+                                                    padding: '0.2rem 0.55rem',
+                                                    borderRadius: '6px',
+                                                    background: badge.bg,
+                                                    color: badge.color
+                                                }}>
+                                                    <span>{badge.icon}</span>
+                                                    {badge.label}
+                                                </span>
+                                                <strong style={{ fontSize: '0.98rem', color: 'var(--text-primary)' }}>
+                                                    {title}
+                                                </strong>
+                                                {item.date && (
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                        • {new Date(item.date).toLocaleDateString()}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleReadNews(item.id)}
+                                                    className="btn btn-secondary"
+                                                    style={{
+                                                        padding: '0.3rem 0.6rem',
+                                                        fontSize: '0.78rem',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.35rem',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                    title={isRead ? t('restore_news') : t('dismiss_news')}
+                                                >
+                                                    <Check size={13} color={isRead ? 'var(--text-secondary)' : 'var(--accent)'} />
+                                                    <span>{isRead ? t('restore_news') : t('dismiss_news')}</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => dismissNews(item.id)}
+                                                    className="btn btn-secondary"
+                                                    style={{
+                                                        padding: '0.3rem 0.45rem',
+                                                        fontSize: '0.78rem',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                    title={t('delete')}
+                                                >
+                                                    <X size={13} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <p style={{
+                                            margin: '0 0 0.65rem 0',
+                                            fontSize: '0.88rem',
+                                            lineHeight: 1.5,
+                                            color: 'var(--text-primary)',
+                                            whiteSpace: 'pre-line'
+                                        }}>
+                                            {message}
+                                        </p>
+
+                                        {targetUrl && (
+                                            <a
+                                                href={targetUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.35rem',
+                                                    fontSize: '0.82rem',
+                                                    color: 'var(--accent)',
+                                                    textDecoration: 'none',
+                                                    fontWeight: 500
+                                                }}
+                                            >
+                                                <span>{t('read_more')}</span>
+                                                <ExternalLink size={13} />
+                                            </a>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* System Activity & Updates */}
             <div className="card" style={{ marginBottom: '2rem', border: '1px dashed var(--border)' }}>

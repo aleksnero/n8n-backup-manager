@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.6.0] - 2026-09-14
+### Added
+- **Feature: Granular Workflow & Credentials Snapshots** — back up and restore individual workflows with their credentials, without affecting the full database. Supports manual creation, automatic scheduling (interval or cron), snapshot protection, retention rotation, cloud sync (S3, Google Drive, OneDrive), and `.zip` download.
+- **Feature: Semantic Integrity Verification** — deep analysis of backup contents including entity counting (workflows, credentials), schema validation, and two advanced heuristic checks:
+  - **Freshness Heuristic** — warns when the latest workflow modification in the backup is older than a configurable threshold (default: 30 days), detecting stale or abandoned databases.
+  - **Delta Anomaly Guard** — warns when workflow or credential count drops by more than 30% (configurable) compared to the previous verified backup, catching accidental data loss.
+- **Feature: Multi-State Integrity Badge** — Dashboard shows ✅ OK / ⚠️ Warning / ❌ Corrupt status with detailed diagnostics tooltip.
+- **Feature: Remote News Feed** — Dashboard displays project announcements fetched from a remote `news.json` file without requiring an app update. Can be completely disabled via Settings toggle.
+- **Feature: Cloud Test Connection UI** — verify S3, Google Drive, and OneDrive credentials directly from Settings.
+- **Feature: Automated Multi-Platform Docker Images** — `linux/amd64` and `linux/arm64` images published to GHCR via GitHub Actions.
+- **Feature: Workflow Snapshots Dashboard Widget** — shows live workflow count, snapshot count, and countdown to next automatic snapshot.
+### Fixed
+- **Settings & Toggles:** Fixed toggle switches (News Feed, auto-schedule) failing to toggle due to synthetic event handling.
+- **Compatibility:** Node.js 18+ `fetch` compatibility and improved timeout guards for external API calls.
+
 ## [1.5.0] - 2026-05-30
 ### Added
 - **Cloud Storage Deletion (#36):** Backups are now automatically deleted from cloud providers (Google Drive, OneDrive, S3) when manually deleted or rotated locally — prevents cloud storage accumulation.

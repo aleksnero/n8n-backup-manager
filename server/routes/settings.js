@@ -16,6 +16,9 @@ router.get('/', verifyToken, async (req, res) => {
         if (settingsMap.auto_integrity_check === undefined) {
             settingsMap.auto_integrity_check = 'true';
         }
+        if (settingsMap.enable_news_feed === undefined) {
+            settingsMap.enable_news_feed = 'true';
+        }
 
         // Синхронізація статусу хмари: storage_location ('cloud' | 'local') та aws_s3_enabled ('true' | 'false')
         const isCloudEnabled = settingsMap.storage_location === 'cloud' || settingsMap.aws_s3_enabled === 'true';

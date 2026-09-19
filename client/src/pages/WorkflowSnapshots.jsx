@@ -242,7 +242,7 @@ export default function WorkflowSnapshots() {
     const activeWfCount = liveWorkflows.filter(w => w.active).length;
 
     return (
-        <div className="container" style={{ paddingBottom: '3rem' }}>
+        <div style={{ paddingBottom: '3rem' }}>
             {/* Верхній блок заголовка */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div>
@@ -690,9 +690,14 @@ export default function WorkflowSnapshots() {
                                                     </div>
                                                 </td>
 
-                                                {/* Дата */}
-                                                <td style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
-                                                    {new Date(snap.createdAt).toLocaleString()}
+                                                {/* Дата та час */}
+                                                <td style={{ padding: '0.65rem 0.85rem', whiteSpace: 'nowrap' }}>
+                                                    <div style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                                                        {new Date(snap.createdAt).toLocaleDateString()}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                                                        {new Date(snap.createdAt).toLocaleTimeString()}
+                                                    </div>
                                                 </td>
 
                                                 {/* Дії */}

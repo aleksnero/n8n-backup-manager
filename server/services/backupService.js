@@ -355,8 +355,14 @@ const createBackup = async (type = 'manual', label = null) => {
                 if (checkRes.ok) {
                     const wfCount = checkRes.stats?.workflows ?? 0;
                     const credCount = checkRes.stats?.credentials ?? 0;
-                    integrityInfo = `OK (${wfCount} wf, ${credCount} creds)`;
-                    await logMessage('info', `Automatic integrity check passed: ${wfCount} workflows, ${credCount} credentials`);
+                    if (checkRes.status === 'warning' || (checkRes.warnings && checkRes.warnings.length > 0)) {
+                        const warnSummary = checkRes.warnings.join('; ');
+                        integrityInfo = `WARNING (${wfCount} wf) — ${warnSummary}`;
+                        await logMessage('warn', `Automatic integrity check warning: ${warnSummary}`);
+                    } else {
+                        integrityInfo = `OK (${wfCount} wf, ${credCount} creds)`;
+                        await logMessage('info', `Automatic integrity check passed: ${wfCount} workflows, ${credCount} credentials`);
+                    }
                 } else {
                     integrityInfo = `FAILED (${checkRes.error || 'corrupted'})`;
                     await logMessage('warn', `Automatic integrity check failed: ${checkRes.error || 'corrupted'}`);

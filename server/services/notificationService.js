@@ -21,7 +21,8 @@ function buildMessage(event, data) {
         case 'backup_success': {
             let msg = `✅ *Backup Created*\n\`${data.filename}\`\nSize: ${data.size || '—'}`;
             if (data.integrity) {
-                msg += `\n🛡️ Integrity: ${data.integrity}`;
+                const icon = data.integrity.includes('WARNING') ? '⚠️' : '🛡️';
+                msg += `\n${icon} Integrity: ${data.integrity}`;
             }
             msg += `\n🕐 ${timestamp}`;
             return msg;

@@ -1,17 +1,16 @@
 {
     "version": "1.6.0",
-    "releaseDate": "2026-05-30T10:00:00Z",
-    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.5.0/deploy.zip",
-    "releaseNotes": "Major SQLite reliability release: safe restore with container lifecycle management, deep integrity checks via sqlite3 driver, cloud storage cleanup on backup deletion, and UX improvements.",
+    "releaseDate": "2026-09-14T20:00:00Z",
+    "downloadUrl": "https://github.com/aleksnero/n8n-backup-manager/releases/download/v1.6.0/deploy.zip",
+    "releaseNotes": "Major feature release: Granular Workflow Snapshots, Semantic Integrity Verification with Freshness Heuristics & Delta Anomaly Guard, Prebuilt Multi-Platform Docker Images, and Remote Announcements Feed.",
     "minVersion": "1.2.0",
     "changelog": [
-        "Feature: Cloud Storage Deletion — backups are now auto-deleted from GDrive/OneDrive/S3 on local delete or rotation (#36)",
-        "Feature: SQLite sqlite3 prerequisite validation on Dashboard connection status",
-        "Fix (P0): Reworked SQLite restore — safe container stop, WAL/SHM neutralization, automatic restart",
-        "Fix: Resolved SQLite container stop error — no longer stops unrelated db_container for SQLite setups (#35)",
-        "Fix: Settings UI auto-clears db_container_name when db_type is sqlite",
-        "UX: Improved Telegram Chat ID hint to reference @userinfobot",
-        "Rewrite: Integrity checks now prove recoverability — SQLite via PRAGMA integrity_check + schema validation, Postgres via full decrypt/decompress pipeline",
-        "Docs: Updated screenshots, added community contributors, updated README.ua.md"
+        "Feature: Granular Workflow & Credentials Snapshots Subsystem with zero-downtime rollback, cloud sync, and retention lock (#v1.6.0)",
+        "Feature: Advanced Semantic Integrity Verification — entity counts, Freshness Heuristic (stale DB detection), and Delta Anomaly Guard (>30% drop warning)",
+        "Feature: Multi-state integrity badge (OK, Warning, Corrupt) in Dashboard with detailed diagnostics tooltip",
+        "Feature: Independent Remote News Feed in Dashboard fetching announcements without requiring app updates",
+        "Feature: Cloud Test Connection UI for S3, Google Drive, and OneDrive",
+        "Feature: Automated multi-platform Docker images (linux/amd64, linux/arm64) published to GHCR",
+        "Fix: Node.js 18+ fetch compatibility and improved timeout guards"
     ]
 }

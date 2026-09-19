@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middleware/auth');
 const newsService = require('../services/newsService');
+const Settings = require('../models/Settings');
 
 /**
  * GET /api/news
@@ -9,6 +10,11 @@ const newsService = require('../services/newsService');
  */
 router.get('/', verifyToken, async (req, res) => {
     try {
+        const setting = await Settings.findOne({ where: { key: 'enable_news_feed' } });
+        if (setting && setting.value === 'false') {
+            return res.json({ news: [], disabled: true });
+        }
+
         const feed = await newsService.getNewsFeed();
         res.json(feed);
     } catch (error) {

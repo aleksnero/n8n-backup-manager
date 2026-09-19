@@ -82,7 +82,8 @@ export default function Settings() {
         onedrive_refresh_token: '',
         notification_enabled: 'false',
         notification_telegram_token: '',
-        notification_telegram_chat_id: ''
+        notification_telegram_chat_id: '',
+        enable_news_feed: 'true'
     });
 
     const [loading, setLoading] = useState(true);
@@ -248,6 +249,19 @@ export default function Settings() {
         }
     };
 
+    // Миттєве перемикання та збереження налаштування стрічки новин
+    const handleNewsFeedToggle = async (e) => {
+        const nextVal = e.target.checked ? 'true' : 'false';
+        setSettings((prev) => ({ ...prev, enable_news_feed: nextVal }));
+        try {
+            await axios.post('/api/settings', { enable_news_feed: nextVal });
+            toast.success(t('saved') || 'Saved!');
+        } catch (err) {
+            console.error('Failed to save news feed setting', err);
+            toast.error('Failed to save setting: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
     // Тестування підключення до хмарного сховища
     const testCloudConnection = async () => {
         const provider = settings.cloud_provider || 's3';
@@ -267,7 +281,7 @@ export default function Settings() {
                     client_id: settings.gdrive_client_id,
                     client_secret: settings.gdrive_client_secret,
                     refresh_token: settings.gdrive_refresh_token,
-                    google_drive_credentials: settings.google_drive_credentials
+                    folder_id: settings.gdrive_folder_id
                 };
             } else if (provider === 'onedrive') {
                 credentials = {
@@ -726,6 +740,26 @@ export default function Settings() {
                             </div>
                         </>
                     )}
+
+                    {/* Стрічка новин та анонсів проекту */}
+                    <div style={{ marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.25rem' }}>
+                                    {t('enable_news_feed')}
+                                </label>
+                                <small style={{ color: 'var(--text-secondary)', display: 'block', lineHeight: 1.4 }}>
+                                    {t('enable_news_feed_desc')}
+                                </small>
+                            </div>
+                            <Switch
+                                id="enable_news_feed_sheet1"
+                                name="enable_news_feed"
+                                checked={settings.enable_news_feed !== 'false'}
+                                onChange={handleNewsFeedToggle}
+                            />
+                        </div>
+                    </div>
                 </div>
             </Sheet>
 
@@ -1009,36 +1043,6 @@ export default function Settings() {
                                             {t('gdrive_folder_id_hint') || 'Google Drive folder ID from URL after /folders/. Leave empty for root.'}
                                         </small>
                                     </div>
-
-                                    {/* Підтримка прямої вставки Service Account JSON або OAuth2 JSON */}
-                                    <div style={{ marginBottom: '1rem', borderTop: '1px dashed var(--border)', paddingTop: '1rem' }}>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
-                                            Service Account / OAuth2 Raw JSON (Optional)
-                                        </label>
-                                        <textarea
-                                            rows="4"
-                                            name="google_drive_credentials"
-                                            value={settings.google_drive_credentials || ''}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                setSettings((prev) => {
-                                                    const next = { ...prev, google_drive_credentials: val };
-                                                    try {
-                                                        const p = JSON.parse(val);
-                                                        if (p.client_id) next.gdrive_client_id = p.client_id;
-                                                        if (p.client_secret) next.gdrive_client_secret = p.client_secret;
-                                                        if (p.refresh_token) next.gdrive_refresh_token = p.refresh_token;
-                                                    } catch (_) {}
-                                                    return next;
-                                                });
-                                            }}
-                                            placeholder='{"type": "service_account", ...}'
-                                            style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.8rem' }}
-                                        />
-                                        <small style={{ color: 'var(--text-secondary)', display: 'block', marginTop: '0.25rem' }}>
-                                            Вставте Service Account JSON або повний OAuth2 JSON.
-                                        </small>
-                                    </div>
                                 </>
                             )}
 
@@ -1297,6 +1301,38 @@ export default function Settings() {
                             {t('change_password')}
                         </button>
                     </form>
+
+                    {/* Стрічка новин та анонсів проекту */}
+                    <div style={{ marginBottom: '1.5rem', padding: '1.25rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', backgroundColor: 'var(--bg-primary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.75rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.25rem' }}>
+                                    {t('enable_news_feed')}
+                                </label>
+                                <small style={{ color: 'var(--text-secondary)', display: 'block', lineHeight: 1.4, fontSize: '0.82rem' }}>
+                                    {t('enable_news_feed_desc')}
+                                </small>
+                            </div>
+                            <Switch
+                                id="enable_news_feed_sheet5"
+                                name="enable_news_feed"
+                                checked={settings.enable_news_feed !== 'false'}
+                                onChange={handleNewsFeedToggle}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={isSaving}
+                                onClick={handleSubmit}
+                                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                            >
+                                <Save size={14} />
+                                <span>{isSaving ? (t('saving') || 'Saving...') : (t('save_changes') || 'Save changes')}</span>
+                            </button>
+                        </div>
+                    </div>
 
                     {/* Інструмент швидкого очищення кешу браузера */}
                     <div style={{ padding: '1.25rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', backgroundColor: 'var(--bg-primary)' }}>

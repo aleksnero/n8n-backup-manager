@@ -290,6 +290,12 @@ export const translations = {
         restore_news: 'Mark as unread',
         show_all_news: 'Show all',
         show_unread_only: 'Unread only',
+        all_news_read: 'All announcements have been read!',
+        next_snapshot: 'Next Snapshot',
+        snapshots: 'snapshots',
+        news_feed_settings: 'News Feed',
+        enable_news_feed: 'Show News & Announcements on Dashboard',
+        enable_news_feed_desc: 'Display project news, release announcements, and updates on the dashboard.',
     },
     uk: {
         // Sidebar & Layout
@@ -579,5 +585,11 @@ export const translations = {
         restore_news: 'Позначити як нове',
         show_all_news: 'Показати всі',
         show_unread_only: 'Тільки нові',
+        all_news_read: 'Усі новини та анонси прочитано!',
+        next_snapshot: 'Наступний снапшот',
+        snapshots: 'снапшотів',
+        news_feed_settings: 'Стрічка новин',
+        enable_news_feed: 'Відображати блок новин та анонсів на головній',
+        enable_news_feed_desc: 'Показувати новини проекту, інформацію про релізи та оновлення на панелі дашборду.',
     }
 };

@@ -14,7 +14,7 @@
 
 **Automatic backup and restore system for n8n**
 
-[Features](#-features) • [Platform Support](#️-platform-support) • [Installation](#️-installation) • [Usage](#-usage) • [Updates](#-update-system) • [Screenshots](#-screenshots) • [🇺🇦 Українська версія](README.ua.md)
+[Features](#-features) • [Platform Support](#️-platform-support) • [Installation](#️-installation) • [Usage](#-usage) • [Workflow Snapshots](#-workflow--credentials-snapshots) • [Updates](#-update-system) • [Screenshots](#-screenshots) • [🇺🇦 Українська версія](README.ua.md)
 
 ### 🌟 Special Thanks
 
@@ -41,10 +41,25 @@ Huge thanks to the community members who help improve this project through feedb
 - ✅ **Protected Backups** (prevent auto-deletion)
 - ✅ **Custom Backup Labels** (name your backups on creation)
 
+### Workflow & Credentials Snapshots *(New in v1.6.0)*
+- ✅ **Granular Workflow Snapshots** — back up individual workflows with their credentials
+- ✅ **Zero-Downtime Rollback** — restore a single workflow without affecting the entire database
+- ✅ **Automatic Scheduling** — snapshots run on their own schedule (interval or cron)
+- ✅ **Snapshot Protection & Retention** — protect important snapshots from rotation
+- ✅ **Cloud Sync** — snapshots can be uploaded to S3, Google Drive, or OneDrive
+- ✅ **Download & Archive** — export snapshots as `.zip` archives
+
+### Integrity & Verification *(New in v1.6.0)*
+- ✅ **Semantic Integrity Check** — verifies actual database content (entity counts, schema validation)
+- ✅ **Freshness Heuristic** — warns if the database hasn't been modified in a configurable period (default: 30 days)
+- ✅ **Delta Anomaly Guard** — warns when workflows or credentials drop by more than 30% compared to the previous backup
+- ✅ **Multi-State Integrity Badge** — Dashboard shows ✅ OK / ⚠️ Warning / ❌ Corrupt status with detailed tooltip
+
 ### Cloud Storage
 - ✅ **S3 Compatible** (AWS, MinIO, DigitalOcean Spaces)
 - ✅ **Google Drive** (OAuth2: Client ID + Secret + Refresh Token)
 - ✅ **Microsoft OneDrive** (OAuth2: Client ID + Secret + Refresh Token)
+- ✅ **Cloud Test Connection** — verify cloud credentials from Settings UI
 
 ### Monitoring & Notifications
 - ✅ **Telegram Notifications** — alerts on backup success/failure
@@ -52,6 +67,7 @@ Huge thanks to the community members who help improve this project through feedb
 - ✅ **Backup Integrity Check** — validate archive health *(Linux only — see below)*
 - ✅ **Connection Status Monitoring**
 - ✅ **Detailed Logging**
+- ✅ **Remote News Feed** — in-app announcements without requiring an update *(can be disabled in Settings)*
 
 ### Interface & UX
 - ✅ **Web Interface** — responsive, mobile-friendly
@@ -63,6 +79,7 @@ Huge thanks to the community members who help improve this project through feedb
 ### System
 - ✅ **Automatic Update System** from GitHub
 - ✅ **Rollback** capability
+- ✅ **Multi-platform Docker Images** (linux/amd64, linux/arm64) on GHCR
 
 ---
 
@@ -77,12 +94,15 @@ This app runs on **Linux** (recommended for production) and **Windows/macOS** (f
 | Compression & Encryption | ✅ | ✅ |
 | Cloud Upload (S3 / GDrive / OneDrive) | ✅ | ✅ |
 | Telegram Notifications | ✅ | ✅ |
-| **Backup Integrity Check** (`tar`) | ✅ | ❌ *hidden automatically* |
+| Workflow & Credentials Snapshots | ✅ | ✅ |
+| Semantic Integrity Check | ✅ | ✅ |
+| **Archive Integrity Check** (`tar`) | ✅ | ❌ *hidden automatically* |
+| Remote News Feed | ✅ | ✅ |
 | Auto-Update via GitHub | ✅ | ✅ |
 | PWA Install | ✅ | ✅ |
 
 > [!NOTE]
-> **Integrity Check** uses the system `tar` command to verify archive health. On Windows/macOS the feature is automatically hidden — no configuration needed.
+> **Archive Integrity Check** uses the system `tar` command to verify archive health. On Windows/macOS the feature is automatically hidden — no configuration needed.
 
 > [!TIP]
 > **Running locally on Windows or macOS?** See the **[Local Development Guide](LOCAL_SETUP.md)** (or [🇺🇦 Ukrainian](LOCAL_SETUP.ua.md)) for step-by-step setup with Node.js + npm, without Docker.
@@ -91,27 +111,34 @@ This app runs on **Linux** (recommended for production) and **Windows/macOS** (f
 
 ## 📸 Screenshots
 
-### Demo Preview
-![n8n Backup Manager Demo](screenshots/demo.gif)
-
 ### Dashboard
-![Dashboard](screenshots/Dashboard_1.4.1.png)
+![Dashboard](screenshots/Dashboard_1.6.0.png)
 *Main dashboard with system status, backup size trend, and quick actions*
 
 ### Backups
-![Backups](screenshots/Backups_1.4.1.png)
+![Backups](screenshots/Backups_1.6.0.png)
 *Backup management: view, download, restore, integrity check*
 
+### Workflow & Credentials Snapshots
+![Workflow & Credentials Snapshots](screenshots/Workflow%20%26%20Credentials%20Snapshots-1_1.6.0.png)
+*Granular workflow and credentials snapshots with manual & automatic backups*
+
+![Workflow & Credentials Snapshots Details](screenshots/Workflow%20%26%20Credentials%20Snapshots-2_1.6.0.png)
+*Workflow snapshot history, restoration, and download*
+
 ### Settings
-![Settings](screenshots/Settings_1.4.1.png)
-*Connection settings, cloud providers, Telegram notifications*
+![Settings - General & Backups](screenshots/Settings_1.4.1-1_1.6.0.png)
+*Connection settings, database config, and general preferences*
+
+![Settings - Cloud & Notifications](screenshots/Settings_1.4.1-2_1.6.0.png)
+*Cloud providers (S3, Google Drive, OneDrive) and Telegram notifications*
 
 ### Updates
-![Updates](screenshots/Updates_1.4.1.png)
+![Updates](screenshots/Updates_1.6.0.png)
 *Automatic update system from GitHub*
 
 ### Logs
-![Logs](screenshots/Logs_1.4.1.png)
+![Logs](screenshots/Logs_1.6.0.png)
 *Detailed system logs*
 
 ---
@@ -318,6 +345,27 @@ Verify that a backup file is not corrupted before restoring it.
 
 ---
 
+### Semantic Integrity Verification *(New in v1.6.0)*
+
+Beyond simple file-level checks, the system performs **deep semantic analysis** of every backup:
+
+- **Entity Counting** — verifies that workflows and credentials actually exist inside the backup file
+- **Freshness Heuristic** — checks when the latest workflow was modified; if all data is older than 30 days (configurable), a ⚠️ warning is raised. This catches situations where backups run against a stale or abandoned database after migration
+- **Delta Anomaly Guard** — compares the current backup's entity count with the previous verified backup. If workflow or credential count drops by more than 30% (configurable), a ⚠️ warning is issued. This catches accidental data loss or permission problems during export
+
+Results are displayed as a multi-state badge on the Dashboard:
+
+| Badge | Meaning |
+|:---:|---|
+| ✅ **OK** | Backup verified, data is fresh and counts are stable |
+| ⚠️ **Warning** | Backup is structurally valid, but heuristics detected potential issues |
+| ❌ **Corrupt** | Backup failed decryption, decompression, or contains zero entities |
+
+> [!TIP]
+> You can adjust thresholds in **Settings**: `integrity_staleness_days` (default: 30) and `integrity_drop_percent` (default: 30).
+
+---
+
 ### Restoring
 
 1. Go to **Backups**.
@@ -325,6 +373,91 @@ Verify that a backup file is not corrupted before restoring it.
 3. Click **Restore**.
 4. Confirm the action.
 5. Wait for restoration to complete.
+
+---
+
+## 📷 Workflow & Credentials Snapshots
+
+Workflow Snapshots are a **granular backup system** that works alongside full database backups. Instead of backing up the entire database, snapshots capture **individual workflows and their associated credentials**, allowing precise rollback of a single workflow without affecting the rest of your n8n instance.
+
+### What gets saved in a snapshot
+
+Each snapshot captures:
+- **Workflow definition** (name, nodes, connections, settings, static data)
+- **All credentials** used by that workflow (encrypted)
+- **Metadata** (creation date, type, custom notes)
+
+Everything is packed into a `.zip` archive and optionally encrypted with the same AES-256 key used for full backups.
+
+### When to use Snapshots vs Full Backups
+
+| Scenario | Use |
+|---|---|
+| Protect against total database loss | **Full Backup** |
+| Roll back a specific broken workflow | **Snapshot** |
+| Save a known-good workflow state before editing | **Snapshot** |
+| Migrate a workflow to another n8n instance | **Snapshot** (download and restore) |
+| Scheduled daily/weekly protection | **Both** (run full backup schedule + snapshot schedule) |
+
+### Creating a Snapshot
+
+**Manual:**
+1. Navigate to **Workflow & Credentials Snapshots** in the sidebar.
+2. You will see a live list of all workflows in your n8n instance.
+3. Click the **camera icon** next to the workflow you want to snapshot.
+4. Optionally add a **note** describing why you are saving this version.
+5. The snapshot is created instantly.
+
+**Automatic:**
+1. Go to **Settings → Workflow Snapshots**.
+2. Enable the **Auto-Schedule** toggle.
+3. Choose a **schedule** (interval in minutes or a cron expression).
+4. Choose a **scope**:
+   - **All Active** — snapshots all active workflows
+   - **All** — snapshots every workflow (including inactive)
+5. Set a **retention count** (how many snapshots to keep per workflow; protected snapshots are excluded from rotation).
+
+### Restoring a Snapshot
+
+1. Navigate to **Workflow & Credentials Snapshots**.
+2. Find the desired snapshot in the table.
+3. Click the **restore icon** ↩️.
+4. Confirm the action.
+5. The system will **overwrite the workflow and its credentials** in the live n8n database. n8n picks up changes automatically — no restart required.
+
+> [!IMPORTANT]
+> Restoring a snapshot **replaces** the current version of that workflow and its credentials in the live database. Other workflows are not affected.
+
+### Protecting & Downloading Snapshots
+
+- **Protect**: Click the **lock icon** 🔒 to prevent a snapshot from being auto-deleted during retention rotation.
+- **Download**: Click the **download icon** ⬇️ to export the snapshot as a `.zip` archive to your local machine.
+- **Delete**: Click the **trash icon** 🗑️ to permanently remove a snapshot.
+
+### Dashboard Widget
+
+The Dashboard shows a **Workflow Snapshots** summary card with:
+- Total number of workflows in your n8n instance
+- Total number of saved snapshots
+- Countdown timer to the next automatic snapshot (when scheduling is enabled)
+
+---
+
+## 📰 News Feed
+
+The Dashboard includes a **remote news feed** that shows announcements, tips, and important notices from the project maintainer — without requiring an app update.
+
+- News items are fetched from the project's `news.json` file on GitHub
+- You can **dismiss** individual news items with the ✕ button
+- You can **mark as read** to stop the unread indicator
+
+**To disable the news feed entirely:**
+1. Go to **Settings → General**.
+2. Toggle **News Feed** to off.
+3. The Dashboard will no longer fetch or display news.
+
+> [!NOTE]
+> The news feed is a **read-only** channel. It does not send any data from your instance. The app only fetches a public JSON file.
 
 ---
 
@@ -392,7 +525,7 @@ networks:
 | Volume | Description |
 |--------|-------------|
 | `/var/run/docker.sock` | Docker access for container management |
-| `./backups` | Backup storage |
+| `./backups` | Backup storage (full backups + snapshots) |
 | `./data` | SQLite database |
 
 ---

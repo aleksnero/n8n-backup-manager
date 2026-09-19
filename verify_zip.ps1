@@ -1,5 +1,4 @@
-# Verify Deploy Zip Content v1.3.5
-
+# Verify Deploy Zip Content v1.6.0
 
 $zipPath = "deploy.zip"
 
@@ -15,7 +14,7 @@ $tempDir = "verify_temp"
 if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir }
 New-Item -ItemType Directory -Force $tempDir | Out-Null
 
-# Extract specific files to check
+# Extract files to check
 Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
 
 # Check 1: BackupService JSON Fix
@@ -27,23 +26,31 @@ else {
     Write-Host "[FAIL] BackupService MISSING JSON fix!" -ForegroundColor Red
 }
 
-# Check 2: Backups.jsx Window.Confirm Fix (Client is compiled, so we check if the string exists in the bundle)
-# We need to find the JS file in public/assets
-$jsFiles = Get-ChildItem "$tempDir/public/assets/*.js"
-$foundConfirm = $false
-foreach ($file in $jsFiles) {
-    $content = Get-Content $file.FullName -Raw
-    if ($content -match "window\.confirm") {
-        $foundConfirm = $true
-        break
-    }
-}
-
-if ($foundConfirm) {
-    Write-Host "[OK] Client bundle contains window.confirm." -ForegroundColor Green
+# Check 2: Integrity Service Heuristics
+$integrityService = Get-Content "$tempDir/services/integrityService.js" -Raw
+if ($integrityService -match "Database appears stale" -and $integrityService -match "Significant workflow drop") {
+    Write-Host "[OK] IntegrityService contains Freshness Heuristic & Delta Anomaly Guard." -ForegroundColor Green
 }
 else {
-    Write-Host "[FAIL] Client bundle MISSING window.confirm! (Did you run npm run build?)" -ForegroundColor Red
+    Write-Host "[FAIL] IntegrityService MISSING heuristics!" -ForegroundColor Red
+}
+
+# Check 3: Client bundle verification
+$jsFiles = Get-ChildItem "$tempDir/public/assets/*.js"
+if ($jsFiles.Count -gt 0) {
+    Write-Host "[OK] Client bundle exists ($($jsFiles.Count) files in public/assets)." -ForegroundColor Green
+}
+else {
+    Write-Host "[FAIL] Client bundle MISSING in public/assets!" -ForegroundColor Red
+}
+
+# Check 4: version.json
+if (Test-Path "$tempDir/version.json") {
+    $versionContent = Get-Content "$tempDir/version.json" -Raw | ConvertFrom-Json
+    Write-Host "[OK] version.json present (version $($versionContent.version))." -ForegroundColor Green
+}
+else {
+    Write-Host "[FAIL] version.json MISSING!" -ForegroundColor Red
 }
 
 # Cleanup
