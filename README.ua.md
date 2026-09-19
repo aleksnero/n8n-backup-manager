@@ -20,7 +20,7 @@
 
 Величезне дякуємо учасникам спільноти, які допомагають покращувати цей проєкт своїм зворотним зв'язком, ідеями та тестуванням:
 
-**[@hoverlover](https://github.com/hoverlover)** • **[@falone](https://github.com/falone)**
+**[@hoverlover](https://github.com/hoverlover)** • **[@falone](https://github.com/falone)** • **[@carlosruiz](https://community.n8n.io/u/carlosruiz/summary)**
 
 *Ваша допомога безцінна!* ❤️
 
